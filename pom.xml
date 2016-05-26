@@ -17,6 +17,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <aetherVersion>1.1.0</aetherVersion>
+
+    <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
+    <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
   </properties>
 
   <dependencies>
