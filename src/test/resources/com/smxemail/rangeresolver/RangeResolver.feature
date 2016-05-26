@@ -1,0 +1,71 @@
+Feature: Range Resolver
+
+  Scenario: Parse simple repository declaration
+    Given the following script:
+      """
+      // Declare repository locations, independent of build tool.
+      repository http://SERVER_HERE/nexus/content/repositories/releases;
+      repository http://SERVER_THERE/nexus/content/repositories/snapshots;
+      """
+    Then the repository "http://SERVER_HERE/nexus/content/repositories/releases" should be declared
+    And the repository "http://SERVER_THERE/nexus/content/repositories/snapshots" should be declared
+
+  Scenario: Parse import declaration
+    Given the following script:
+      """
+      import com.talios:bill-of-materials:1.0.2;
+      """
+    Then the import "com.talios:bill-of-materials:1.0.2" should be declared
+
+  Scenario: Parse duplicate import declarations should fail
+    Given the following script:
+      """
+      import com.talios:bill-of-materials:1.0.2;
+      import com.talios:bill-of-materials:1.0.2;
+      """
+    Then it should fail with "Duplicate import declaration found in cucumber"
+
+  Scenario: Parse circular import declarations should fail
+    Given the following script:
+      """
+      import com.talios:bill-of-materials:1.0.2;
+      """
+    And that "com.talios:bill-of-materials:1.0.2" was previously imported
+    When resolving with aether
+    Then it should fail with "Circular imports detected for com.talios:bill-of-materials:1.0.2 in cucumber"
+
+  Scenario: Parse resolution request
+    Given the following script:
+      """
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0) as test.prop;
+      resolve lowest com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
+      """
+    Then the dependency "com.smxemail:com.smxemail.api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
+    And the dependency "com.smxemail:com.smxemail.api" should use the property "test.prop"
+    And the dependency "com.smxemail:com.smxemail.impl" should use the property "com.smxemail.impl.version"
+
+  Scenario: Parse resolved artifact
+    Given the following script:
+      """
+      resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
+      """
+    Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved from "com.talios:bill-of-materials:1.0.2"
+
+#  Scenario: Parse multiple resolutions of an artifact
+#    Given the following script:
+#      """
+#      resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
+#      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+#      """
+#    When resolving with aether
+#    Then the dependency "com.smxemail:com.smxemail.api:2.0.1" should be resolved from "com.talios:bill-of-materials:1.0.2"
+#    And a warning message "bugger" should be logged
+
+  Scenario: Resolve resolved artifact with Aether
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      """
+    When resolving with aether
+    Then it should succeed
