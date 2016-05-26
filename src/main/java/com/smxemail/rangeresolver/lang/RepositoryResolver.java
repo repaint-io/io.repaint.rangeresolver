@@ -26,7 +26,6 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
-import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
@@ -223,8 +222,8 @@ public class RepositoryResolver {
         throw missingReleases(resolve);
       }
 
-    } catch (VersionRangeResolutionException e) {
-      e.printStackTrace();
+    } catch (RepositoryException e) {
+      warningLogger.accept(e.getMessage());
       return null;
     }
   }
@@ -234,7 +233,8 @@ public class RepositoryResolver {
   }
 
   private IllegalStateException missingReleases(Resolve resolve) {
-    return new IllegalStateException(String.format("Unable to resolve any releases in range of %s from %s", resolve.artifact(), resolve.range()));
+    return new IllegalStateException(
+        String.format("Unable to resolve any releases in range of %s from %s", resolve.artifact(), resolve.range().asVersionRange()));
   }
 
   private DefaultArtifact resolveToArtifact(Resolve resolve) {
