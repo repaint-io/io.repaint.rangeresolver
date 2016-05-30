@@ -29,7 +29,7 @@ public class RepositoryWriter {
 
         for (Import imported : rangeResolver.imports()) {
           printComments(pw, imported.comments());
-          pw.printf("import %s:%s;\n", imported.artifact(), imported.version());
+          pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
         }
       }
 
