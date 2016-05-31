@@ -17,6 +17,9 @@ public abstract class AbstractRangeResolver {
   public abstract List<Resolve> resolves();
 
   @Value.Parameter
+  public abstract List<Alias> aliases();
+
+  @Value.Parameter
   public abstract List<Resolved> resolved();
 
   @Value.Parameter

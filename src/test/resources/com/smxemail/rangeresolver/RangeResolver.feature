@@ -37,8 +37,10 @@ Feature: Range Resolver
   Scenario: Parse resolution request
     Given the following script:
       """
-      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0) as test.prop;
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0);
       resolve lowest com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
+
+      alias com.smxemail:com.smxemail.api as test.prop;
       """
     Then the dependency "com.smxemail:com.smxemail.api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
     And the dependency "com.smxemail:com.smxemail.api" should use the property "test.prop"
@@ -69,3 +71,41 @@ Feature: Range Resolver
       """
     When resolving with aether
     Then it should succeed
+
+  Scenario: Write resolved DSL back out
+    Given the following script:
+      """
+      // comment
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      // comment
+      import com.talios:bill-of-materials:1.0.2;
+      // comment
+      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      // comment
+      alias com.smxemail:com.smxemail.api as test.prop;
+      // comment
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      // comment
+      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+    When when writing the DSL back out
+    Then it should match the follow script:
+      """
+      // comment
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+
+      // comment
+      import com.talios:bill-of-materials:1.0.2;
+
+      // comment
+      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+
+      // comment
+      alias com.smxemail:com.smxemail.api as test.prop;
+
+      // comment
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+
+      // comment
+      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
