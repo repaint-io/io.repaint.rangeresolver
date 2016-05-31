@@ -5,12 +5,7 @@ import org.immutables.value.Value;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ARTIFACT_VERSION;
 
 @Value.Immutable
-public abstract class AbstractResolve {
-
-  public enum Bound {
-    HIGHEST,
-    LOWEST
-  }
+public abstract class AbstractResolve implements PropertyBased {
 
   @Value.Parameter
   public abstract String comments();
@@ -27,9 +22,6 @@ public abstract class AbstractResolve {
   @Value.Parameter
   public abstract Range range();
 
-  @Value.Parameter
-  public abstract String alias();
-
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());
@@ -37,10 +29,6 @@ public abstract class AbstractResolve {
 
   @Value.Derived
   public String propertyName() {
-    if ("".equals(alias())) {
-      return String.format(ARTIFACT_VERSION, artifact());
-    } else {
-      return alias();
-    }
+    return String.format(ARTIFACT_VERSION, artifact());
   }
 }

@@ -3,9 +3,11 @@ package com.smxemail.rangeresolver.lang;
 import com.google.common.collect.ImmutableList;
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
+import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.Range;
 import com.smxemail.rangeresolver.api.RangeResolver;
+import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -23,6 +25,7 @@ import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
@@ -43,7 +46,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RepositoryResolver {
 
@@ -93,10 +95,10 @@ public class RepositoryResolver {
    * Resolve artifact requests from the resolution model.
    *
    * @param rangeResolver The range resolution model.
-   * @return A list of resolved artifacts
+   * @return A {@link ResolutionResult}
    * @throws RepositoryException
    */
-  public List<Resolved> resolveRanges(RangeResolver rangeResolver, String sourceReference) throws RepositoryException {
+  public ResolutionResult resolveRanges(RangeResolver rangeResolver, String sourceReference) throws RepositoryException {
     return resolveRanges(ImmutableList.of(sourceReference), rangeResolver, sourceReference);
   }
 
@@ -108,7 +110,7 @@ public class RepositoryResolver {
    * @return A list of resolved artifacts
    * @throws RepositoryException
    */
-  public List<Resolved> resolveRanges(List<String> previouslyImportedGavs, RangeResolver rangeResolver, String sourceReference) throws RepositoryException {
+  public ResolutionResult resolveRanges(List<String> previouslyImportedGavs, RangeResolver rangeResolver, String sourceReference) throws RepositoryException {
     RepositorySystemSession session = newRepositorySystemSession();
 
     List<RemoteRepository> repositories =
@@ -116,13 +118,13 @@ public class RepositoryResolver {
 
     repositorySystem.newResolutionRepositories(session, repositories);
 
-    List<Resolved> resolvedImportedThings =
+    ResolutionResult resolvedImportedThings =
         rangeResolver
             .imports()
             .stream()
-            .flatMap(imported -> resolveImport(sourceReference, session, repositories, previouslyImportedGavs, imported))
+            .map(imported -> processImport(sourceReference, session, repositories, previouslyImportedGavs, imported))
             .distinct()
-            .collect(Collectors.toList());
+            .collect(ResolutionResult.REDUCING);
 
     List<MetadataRequest> metadataRequests = rangeResolver.resolves().stream().map(rep -> buildMetaDataRequest(rep)).collect(Collectors.toList());
 
@@ -140,13 +142,14 @@ public class RepositoryResolver {
             .collect(Collectors.toList());
 
     Set<Resolved> allResolved = new TreeSet<>(Comparator.comparing(Resolved::key));
-    allResolved.addAll(resolvedImportedThings);
+    allResolved.addAll(resolvedImportedThings.resolveds());
+    allResolved.addAll(resolvedImportedThings.lockeds());
     allResolved.addAll(resolvedThings);
     List<Resolved> sortedUniqueResolved = ImmutableList.copyOf(allResolved);
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
 
-    return sortedUniqueResolved;
+    return ResolutionResult.of(resolvedImportedThings.aliases(), sortedUniqueResolved, rangeResolver.locked());
   }
 
   /**
@@ -163,36 +166,36 @@ public class RepositoryResolver {
     }
   }
 
-  private Stream<? extends Resolved> resolveImport(
+  private ResolutionResult processImport(
       String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, List<String> previousImports, Import i) {
 
     if (previousImports.contains(i.gav())) {
       throw new IllegalStateException(String.format("Circular imports detected for %s in %s", i.gav(), sourceReference));
     } else {
-      Resolve imported = Resolve.of("", i.group(), i.artifact(), AbstractResolve.Bound.HIGHEST, Range.fixed(i.version()), "");
-
-      // TODO Make resolveArtifact accept both Resolve and Imported
-      resolveArtifact(sourceReference, session, repositories, imported);
-
       try {
-
-        Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
-
-        ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, new ArtifactRequest().setArtifact(artifact));
-
-        RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactResult.getArtifact().getFile()));
-
+        RangeResolver importedRangeResolver = resolveImport(sourceReference, session, repositories, i);
         List<String> updatedImportGavs = ImmutableList.<String>builder().addAll(previousImports).add(i.gav()).build();
-
-        return resolveRanges(updatedImportGavs, importedRangeResolver, i.gav()).stream();
-
+        return resolveRanges(updatedImportGavs, importedRangeResolver, i.gav());
       } catch (RepositoryException | IOException e) {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
         warningLogger.accept(sw.toString());
-        return Stream.empty();
+        return ResolutionResult.empty();
       }
     }
+  }
+
+  public RangeResolver resolveImport(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i)
+      throws ArtifactResolutionException, IOException {
+    Resolve imported = Resolve.of("", i.group(), i.artifact(), Bound.HIGHEST, Range.fixed(i.version()));
+    // TODO Make resolveArtifact accept both Resolve and Imported
+    resolveArtifact(sourceReference, session, repositories, imported);
+    Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
+
+    ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, new ArtifactRequest().setArtifact(artifact));
+
+    RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactResult.getArtifact().getFile()));
+    return importedRangeResolver;
   }
 
   private Resolved resolveArtifact(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve) {
@@ -208,10 +211,10 @@ public class RepositoryResolver {
           repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream().filter(this::excludeSnapshots).collect(Collectors.toList());
 
       if (releasesOnly.isEmpty()) {
-        throw missingReleases(resolve);
+        throw missingReleases(resolve, sourceReference);
       }
 
-      Version boundVersion = resolve.bounds() == AbstractResolve.Bound.HIGHEST ? releasesOnly.get(releasesOnly.size() - 1) : releasesOnly.get(0);
+      Version boundVersion = resolve.bounds() == Bound.HIGHEST ? releasesOnly.get(releasesOnly.size() - 1) : releasesOnly.get(0);
 
       if (boundVersion != null) {
 
@@ -219,7 +222,7 @@ public class RepositoryResolver {
 
         return resolved;
       } else {
-        throw missingReleases(resolve);
+        throw missingReleases(resolve, sourceReference);
       }
 
     } catch (RepositoryException e) {
@@ -232,9 +235,9 @@ public class RepositoryResolver {
     return !v.toString().contains("-SNAPSHOT");
   }
 
-  private IllegalStateException missingReleases(Resolve resolve) {
+  private IllegalStateException missingReleases(Resolve resolve, String sourceReference) {
     return new IllegalStateException(
-        String.format("Unable to resolve any releases in range of %s from %s", resolve.artifact(), resolve.range().asVersionRange()));
+        String.format("Unable to resolve any releases of %s in range of %s from %s", resolve.artifact(), resolve.range().asVersionRange(), sourceReference));
   }
 
   private DefaultArtifact resolveToArtifact(Resolve resolve) {

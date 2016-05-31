@@ -1,6 +1,7 @@
 package com.smxemail.rangeresolver.lang;
 
 import com.google.common.base.Strings;
+import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
@@ -38,12 +39,16 @@ public class RepositoryWriter {
 
         for (Resolve resolve : rangeResolver.resolves()) {
           printComments(pw, resolve.comments());
-          pw.printf("resolve %s %s:%s:%s", resolve.bounds().toString().toLowerCase(), resolve.group(), resolve.artifact(), resolve.range().asVersionRange());
-          if (!"".equals(resolve.alias())) {
-            pw.printf(" as %s;\n", resolve.alias());
-          } else {
-            pw.printf(";\n");
-          }
+          pw.printf("resolve %s %s:%s:%s;\n", resolve.bounds().toString().toLowerCase(), resolve.group(), resolve.artifact(), resolve.range().asVersionRange());
+        }
+      }
+
+      if (!rangeResolver.aliases().isEmpty()) {
+        pw.println();
+
+        for (Alias alias : rangeResolver.aliases()) {
+          printComments(pw, alias.comments());
+          pw.printf("alias %s:%s as %s;\n", alias.group(), alias.artifact(), alias.alias());
         }
       }
 

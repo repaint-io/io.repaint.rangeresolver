@@ -2,14 +2,17 @@ package com.smxemail.rangeresolver.lang;
 
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
-import com.smxemail.rangeresolver.api.AbstractResolve;
+import com.smxemail.rangeresolver.api.Alias;
+import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
+import com.smxemail.rangeresolver.api.PropertyBased;
 import com.smxemail.rangeresolver.api.Range;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,19 +40,28 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
     List<Import> imports = mapList(ctx.imported(), this::resolveImport);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
+    List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
     if (hasDuplicates(imports)) {
       throw new IllegalStateException("Duplicate import declaration found in " + sourceReference);
     }
+    if (hasDuplicates(aliases)) {
+      throw new IllegalStateException("Duplicate alias declaration found in " + sourceReference);
+    }
 
-    Collector<Resolve, ?, java.util.Map<String, String>> collector = Collectors.toMap(Resolve::key, Resolve::propertyName);
+    Collector<PropertyBased, ?, java.util.Map<String, String>> collector = Collectors.toMap(PropertyBased::key, PropertyBased::propertyName);
 
     Map<String, String> propertyNames = resolves.stream().collect(collector);
+    Map<String, String> aliasNames = aliases.stream().collect(collector);
 
-    List<Resolved> resolveds = mapList(ctx.resolved(), (res) -> resolveResolved(propertyNames, res));
-    List<Resolved> locked = mapList(ctx.locked(), (res) -> resolveLocked(propertyNames, res));
+    Map<String, String> effectivePropertyNames = new HashMap<>();
+    effectivePropertyNames.putAll(propertyNames);
+    effectivePropertyNames.putAll(aliasNames);
 
-    return RangeResolver.of(repositories, imports, resolves, resolveds, locked);
+    List<Resolved> resolveds = mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
+    List<Resolved> locked = mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
+
+    return RangeResolver.of(repositories, imports, resolves, aliases, resolveds, locked);
   }
 
   private boolean hasDuplicates(List<?> list) {
@@ -99,9 +111,12 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
-        AbstractResolve.Bound.valueOf(res.bounds().getText().toUpperCase()),
-        range(res.rangedArtifact().range()),
-        alias(res.alias()));
+        Bound.valueOf(res.bounds().getText().toUpperCase()),
+        range(res.rangedArtifact().range()));
+  }
+
+  private Alias resolveAlias(RangeResolverParser.AliasContext res) {
+    return Alias.of(comments(res.comment()), res.artifact().group().getText(), res.artifact().artifactId().getText(), alias(res.aliasValue()));
   }
 
   private Range range(RangeResolverParser.RangeContext context) {
@@ -120,7 +135,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     }
   }
 
-  private String alias(RangeResolverParser.AliasContext context) {
+  private String alias(RangeResolverParser.AliasValueContext context) {
     return context != null ? context.value().getText() : "";
   }
 }

@@ -6,18 +6,20 @@
 
 grammar RangeResolver;
 
-resolver: ( repository | imported | resolve | resolved | locked )* EOF;
+resolver: ( repository | imported | resolve | alias | resolved | locked )* EOF;
 
 repository: comment*  REPOSITORY href SEMI;
 imported: comment* IMPORT resolvedArtifact SEMI;
-resolve: comment* RESOLVE bounds rangedArtifact alias? SEMI;
+resolve: comment* RESOLVE bounds rangedArtifact SEMI;
+alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
 locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
 
 comment: COMMENT;
-alias: AS value;
+aliasValue: AS value;
 href: URL;
 bounds: BOUNDS;
+artifact: group COLON artifactId;
 rangedArtifact: group COLON artifactId COLON range;
 resolvedArtifact: group COLON artifactId COLON version;
 resolvedFromArtifact: group COLON artifactId COLON version;
@@ -34,6 +36,7 @@ value: VALUE;
 
 REPOSITORY: 'repository';
 IMPORT: 'import';
+ALIAS: 'alias';
 RESOLVE: 'resolve';
 RESOLVED: 'resolved';
 LOCKED: 'locked';

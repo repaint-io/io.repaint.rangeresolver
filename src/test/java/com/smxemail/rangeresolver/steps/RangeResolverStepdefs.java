@@ -1,5 +1,6 @@
 package com.smxemail.rangeresolver.steps;
 
+import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
@@ -7,14 +8,17 @@ import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 import com.smxemail.rangeresolver.lang.RangeResolverProcessor;
 import com.smxemail.rangeresolver.lang.RepositoryResolver;
+import com.smxemail.rangeresolver.lang.RepositoryWriter;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
+import cucumber.api.java.en.When;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +37,8 @@ public class RangeResolverStepdefs {
   private List<String> infoMessages;
 
   private List<String> warnMessages;
+
+  private String rangeResolverSource;
 
   private void info(String message) {
     infoMessages.add(message);
@@ -54,6 +60,7 @@ public class RangeResolverStepdefs {
     warnMessages = new ArrayList<>();
     rangeResolver = null;
     rangeResolverException = null;
+    rangeResolverSource = "";
   }
 
   @Given("^the following script:$")
@@ -63,6 +70,19 @@ public class RangeResolverStepdefs {
     } catch (Exception e) {
       rangeResolverException = e;
     }
+  }
+
+  @When("^when writing the DSL back out$")
+  public void whenWritingTheDSLBackOut() throws Throwable {
+    StringWriter sw = new StringWriter();
+    RepositoryWriter.writeRangeResolveSource(rangeResolver, sw);
+    rangeResolverSource = sw.toString();
+  }
+
+  @Then("^it should match the follow script:$")
+  public void itShouldMatchTheFollowScript(String script) throws Throwable {
+    assertWithMessage("Expected DSL does not match").that(rangeResolverSource.trim()).isEqualTo(script.trim());
+    rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
   }
 
   @Then("^the repository \"([^\"]*)\" should be declared$")
@@ -89,6 +109,11 @@ public class RangeResolverStepdefs {
 
   @Then("^the dependency \"([^\"]*)\" should use the property \"([^\"]*)\"$")
   public void theDependencyShouldUseTheProperty(String artifact, String property) throws Throwable {
+    for (Alias alias : rangeResolver.aliases()) {
+      if (artifact.equals(alias.key()) && property.equals(alias.propertyName())) {
+        return;
+      }
+    }
     for (Resolve resolve : rangeResolver.resolves()) {
       if (artifact.equals(resolve.key()) && property.equals(resolve.propertyName())) {
         return;
