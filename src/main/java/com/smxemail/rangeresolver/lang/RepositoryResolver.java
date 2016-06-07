@@ -124,7 +124,7 @@ public class RepositoryResolver {
         rangeResolver
             .imports()
             .stream()
-            .map(imported -> processImport(sourceReference, session, repositories, previouslyImportedGavs, Collections.emptyMap(), imported))
+            .map(imported -> processImport(sourceReference, session, repositories, previouslyImportedGavs, imported))
             .distinct()
             .collect(ResolutionResult.REDUCING);
 
@@ -173,18 +173,13 @@ public class RepositoryResolver {
   }
 
   private ResolutionResult processImport(
-      String sourceReference,
-      RepositorySystemSession session,
-      List<RemoteRepository> repositories,
-      List<String> previousImports,
-      Map<String, Resolved> originalResolvedThings,
-      Import i) {
+      String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, List<String> previousImports, Import i) {
 
     if (previousImports.contains(i.gav())) {
       throw new IllegalStateException(String.format("Circular imports detected for %s in %s", i.gav(), sourceReference));
     } else {
       try {
-        RangeResolver importedRangeResolver = resolveImport(sourceReference, session, repositories, originalResolvedThings, i);
+        RangeResolver importedRangeResolver = resolveImport(sourceReference, session, repositories, i);
         List<String> updatedImportGavs = ImmutableList.<String>builder().addAll(previousImports).add(i.gav()).build();
         return resolveRanges(updatedImportGavs, importedRangeResolver, i.gav());
       } catch (RepositoryException | IOException e) {
@@ -196,15 +191,15 @@ public class RepositoryResolver {
     }
   }
 
-  public RangeResolver resolveImport(
-      String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Map<String, Resolved> originalResolvedThings, Import i)
+  public RangeResolver resolveImport(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i)
       throws ArtifactResolutionException, IOException {
     Resolve imported = Resolve.of("", i.group(), i.artifact(), Bound.HIGHEST, Range.fixed(i.version()));
     // TODO Make resolveArtifact accept both Resolve and Imported
-    resolveArtifact(sourceReference, session, repositories, originalResolvedThings, imported);
+    resolveArtifact(sourceReference, session, repositories, Collections.emptyMap(), imported);
     Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
 
-    ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, new ArtifactRequest().setArtifact(artifact));
+    ArtifactRequest artifactRequest = new ArtifactRequest().setArtifact(artifact).setRepositories(repositories);
+    ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
 
     RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactResult.getArtifact().getFile()));
     return importedRangeResolver;
