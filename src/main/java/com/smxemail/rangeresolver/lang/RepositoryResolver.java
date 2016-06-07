@@ -10,6 +10,7 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositoryException;
@@ -39,6 +40,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +124,7 @@ public class RepositoryResolver {
         rangeResolver
             .imports()
             .stream()
-            .map(imported -> processImport(sourceReference, session, repositories, previouslyImportedGavs, imported))
+            .map(imported -> processImport(sourceReference, session, repositories, previouslyImportedGavs, Collections.emptyMap(), imported))
             .distinct()
             .collect(ResolutionResult.REDUCING);
 
@@ -131,20 +133,24 @@ public class RepositoryResolver {
     infoLogger.accept("Resolving metadata....");
     repositorySystem.resolveMetadata(session, metadataRequests);
 
-    List<String> lockedProperties = rangeResolver.locked().stream().map(Resolved::key).collect(Collectors.toList());
+    Map<String, Resolved> originallyLockedThings = rangeResolver.locked().stream().collect(Resolved.collectByKey);
+    originallyLockedThings.putAll(resolvedImportedThings.locked().stream().collect(Resolved.collectByKey));
+
+    Map<String, Resolved> originallyResolvedThings = rangeResolver.resolved().stream().collect(Resolved.collectByKey);
+    originallyResolvedThings.putAll(originallyLockedThings);
 
     List<Resolved> resolvedThings =
         rangeResolver
             .resolves()
             .stream()
-            .filter(resolve -> isNotLocked(lockedProperties, resolve))
-            .map(resolve -> resolveArtifact(sourceReference, session, repositories, resolve))
+            .filter(resolve -> !isLocked(sourceReference, originallyLockedThings, resolve))
+            .map(resolve -> resolveArtifact(sourceReference, session, repositories, originallyResolvedThings, resolve))
             .collect(Collectors.toList());
 
     Set<Resolved> allResolved = new TreeSet<>(Comparator.comparing(Resolved::key));
-    allResolved.addAll(resolvedImportedThings.resolveds());
-    allResolved.addAll(resolvedImportedThings.lockeds());
     allResolved.addAll(resolvedThings);
+    allResolved.addAll(resolvedImportedThings.locked());
+    allResolved.addAll(resolvedImportedThings.resolved());
     List<Resolved> sortedUniqueResolved = ImmutableList.copyOf(allResolved);
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
@@ -167,13 +173,18 @@ public class RepositoryResolver {
   }
 
   private ResolutionResult processImport(
-      String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, List<String> previousImports, Import i) {
+      String sourceReference,
+      RepositorySystemSession session,
+      List<RemoteRepository> repositories,
+      List<String> previousImports,
+      Map<String, Resolved> originalResolvedThings,
+      Import i) {
 
     if (previousImports.contains(i.gav())) {
       throw new IllegalStateException(String.format("Circular imports detected for %s in %s", i.gav(), sourceReference));
     } else {
       try {
-        RangeResolver importedRangeResolver = resolveImport(sourceReference, session, repositories, i);
+        RangeResolver importedRangeResolver = resolveImport(sourceReference, session, repositories, originalResolvedThings, i);
         List<String> updatedImportGavs = ImmutableList.<String>builder().addAll(previousImports).add(i.gav()).build();
         return resolveRanges(updatedImportGavs, importedRangeResolver, i.gav());
       } catch (RepositoryException | IOException e) {
@@ -185,11 +196,12 @@ public class RepositoryResolver {
     }
   }
 
-  public RangeResolver resolveImport(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i)
+  public RangeResolver resolveImport(
+      String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Map<String, Resolved> originalResolvedThings, Import i)
       throws ArtifactResolutionException, IOException {
     Resolve imported = Resolve.of("", i.group(), i.artifact(), Bound.HIGHEST, Range.fixed(i.version()));
     // TODO Make resolveArtifact accept both Resolve and Imported
-    resolveArtifact(sourceReference, session, repositories, imported);
+    resolveArtifact(sourceReference, session, repositories, originalResolvedThings, imported);
     Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
 
     ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, new ArtifactRequest().setArtifact(artifact));
@@ -198,7 +210,12 @@ public class RepositoryResolver {
     return importedRangeResolver;
   }
 
-  private Resolved resolveArtifact(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve) {
+  private Resolved resolveArtifact(
+      String sourceReference,
+      RepositorySystemSession session,
+      List<RemoteRepository> repositories,
+      Map<String, Resolved> originalResolvedThings,
+      Resolve resolve) {
     try {
 
       Artifact artifact = resolveToArtifact(resolve);
@@ -220,6 +237,15 @@ public class RepositoryResolver {
 
         Resolved resolved = Resolved.of("", resolve.group(), resolve.artifact(), boundVersion.toString(), sourceReference, resolve.propertyName());
 
+        // was the resolved item already resolved? and if so, only return the new resolution if newer, otherwise keep the original with it's original
+        // resolved from lines.
+        if (originalResolvedThings.containsKey(resolved.key())) {
+          Resolved originalResolution = originalResolvedThings.get(resolved.key());
+          if (!isNewerVersion(resolved.version(), originalResolution.version())) {
+            return originalResolution;
+          }
+        }
+
         return resolved;
       } else {
         throw missingReleases(resolve, sourceReference);
@@ -229,6 +255,12 @@ public class RepositoryResolver {
       warningLogger.accept(e.getMessage());
       return null;
     }
+  }
+
+  public static boolean isNewerVersion(String first, String second) {
+    DefaultArtifactVersion vF = new DefaultArtifactVersion(first);
+    DefaultArtifactVersion vS = new DefaultArtifactVersion(second);
+    return vF.compareTo(vS) > 0;
   }
 
   private boolean excludeSnapshots(Version v) {
@@ -244,12 +276,17 @@ public class RepositoryResolver {
     return new DefaultArtifact(String.format("%s:%s:%s", resolve.group(), resolve.artifact(), resolve.range().asVersionRange()));
   }
 
-  private boolean isNotLocked(List<String> lockedProperties, Resolve resolve) {
-    boolean locked = lockedProperties.contains(resolve.key());
-    if (locked) {
-      infoLogger.accept(String.format("Skipping resolution of %s, artifact is locked.", resolve.artifact()));
+  private boolean isLocked(String sourceReference, Map<String, Resolved> lockedProperties, Resolve resolve) {
+    Resolved locked = lockedProperties.get(resolve.key());
+    if (locked != null && locked.resolvedFrom().equals(sourceReference)) {
+      infoLogger.accept(String.format("Skipping resolution of %s, artifact is locally locked.", resolve.artifact()));
+      return true;
     }
-    return !locked;
+    if (locked != null && !locked.resolvedFrom().equals(sourceReference)) {
+      infoLogger.accept(String.format("Re-resolving %s, artifact was originally locked from %s.", resolve.artifact(), locked.resolvedFrom()));
+      return false;
+    }
+    return false;
   }
 
   private MetadataRequest buildMetaDataRequest(AbstractResolve rep) {

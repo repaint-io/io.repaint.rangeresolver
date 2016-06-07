@@ -15,20 +15,17 @@ public abstract class AbstractResolutionResult {
   public abstract List<Alias> aliases();
 
   @Value.Parameter
-  public abstract List<Resolved> resolveds();
+  public abstract List<Resolved> resolved();
 
   @Value.Parameter
-  public abstract List<Resolved> lockeds();
+  public abstract List<Resolved> locked();
 
   public ResolutionResult append(ResolutionResult other) {
     return ResolutionResult.combine(this, other);
   }
 
   public static ResolutionResult combine(AbstractResolutionResult left, AbstractResolutionResult right) {
-    return ResolutionResult.of(combine(left.aliases(), right.aliases()),
-                               combine(left.resolveds(), right.resolveds()),
-                               combine(left.lockeds(), right.lockeds())
-                               );
+    return ResolutionResult.of(combine(left.aliases(), right.aliases()), combine(left.resolved(), right.resolved()), combine(left.locked(), right.locked()));
   }
 
   private static <T> List<T> combine(List<T> left, List<T> right) {

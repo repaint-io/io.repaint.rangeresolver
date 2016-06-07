@@ -2,6 +2,11 @@ package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 @Value.Immutable
 public abstract class AbstractResolved {
 
@@ -27,4 +32,6 @@ public abstract class AbstractResolved {
   public String key() {
     return String.format("%s:%s", group(), artifact());
   }
+
+  public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey = Collectors.toMap(Resolved::key, Function.identity());
 }
