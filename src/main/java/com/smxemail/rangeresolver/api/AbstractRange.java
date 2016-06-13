@@ -2,6 +2,8 @@ package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;
 
+import static com.smxemail.rangeresolver.lang.RepositoryResolver.isNewerVersion;
+
 @Value.Immutable
 public abstract class AbstractRange {
 
@@ -19,6 +21,13 @@ public abstract class AbstractRange {
 
   public static Range fixed(String version) {
     return Range.of("[", version, version, "]");
+  }
+
+  @Value.Check
+  protected void check() {
+    if (isNewerVersion(lower(), upper())) {
+      throw new IllegalArgumentException(String.format("Invalid range requested, %s is lower than %s", upper(), lower()));
+    }
   }
 
   public String asVersionRange() {

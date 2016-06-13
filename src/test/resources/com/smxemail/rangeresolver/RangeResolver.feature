@@ -53,15 +53,6 @@ Feature: Range Resolver
       """
     Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved from "com.talios:bill-of-materials:1.0.2"
 
-#  Scenario: Parse multiple resolutions of an artifact
-#    Given the following script:
-#      """
-#      resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
-#      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
-#      """
-#    When resolving with aether
-#    Then the dependency "com.smxemail:com.smxemail.api:2.0.1" should be resolved from "com.talios:bill-of-materials:1.0.2"
-#    And a warning message "bugger" should be logged
 
   Scenario: Resolve resolved artifact with Aether
     Given the following script:
@@ -72,6 +63,42 @@ Feature: Range Resolver
     When resolving with aether
     Then it should succeed
 
+  Scenario: Resolution filtering should default to preventing SNAPSHOTS selection from Aether
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
+      """
+    When resolving with aether
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0.rc1"
+
+  Scenario: Resolution filtering should limit range selection from Aether
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
+      """
+    When resolving with aether
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.7.5"
+
+  Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
+      """
+    When resolving with aether
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0-SNAPSHOT"
+
+  Scenario: Resolution allow for explicit locked versions from Aether
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.7.2,2.7.2];
+      """
+    When resolving with aether
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.7.2"
+
   Scenario: Write resolved DSL back out
     Given the following script:
       """
@@ -79,8 +106,11 @@ Feature: Range Resolver
       repository http://nexus.smxemail.com/nexus/content/repositories/releases;
       // comment
       import com.talios:bill-of-materials:1.0.2;
+      import unlocked com.talios.test:bill-of-materials:1.0.2;
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
       // comment
@@ -96,9 +126,12 @@ Feature: Range Resolver
 
       // comment
       import com.talios:bill-of-materials:1.0.2;
+      import unlocked com.talios.test:bill-of-materials:1.0.2;
 
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
 
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;

@@ -4,6 +4,7 @@ import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
+import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 import com.smxemail.rangeresolver.lang.RangeResolverProcessor;
@@ -40,6 +41,8 @@ public class RangeResolverStepdefs {
 
   private String rangeResolverSource;
 
+  private ResolutionResult resolutionResult;
+
   private void info(String message) {
     infoMessages.add(message);
     System.out.printf("%s\n", message);
@@ -59,6 +62,7 @@ public class RangeResolverStepdefs {
     infoMessages = new ArrayList<>();
     warnMessages = new ArrayList<>();
     rangeResolver = null;
+    resolutionResult = null;
     rangeResolverException = null;
     rangeResolverSource = "";
   }
@@ -140,7 +144,7 @@ public class RangeResolverStepdefs {
   @Then("^resolving with aether$")
   public void resolvingWithAetherShouldSucceed() throws Throwable {
     try {
-      repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
+      resolutionResult = repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
     } catch (Exception e) {
       rangeResolverException = e;
     }
@@ -178,5 +182,20 @@ public class RangeResolverStepdefs {
   @And("^a warning message \"([^\"]*)\" should be logged$")
   public void aWarningMessageShouldBeLogged(String message) throws Throwable {
     assertWithMessage("The message \"%s\" was not logged.", message).that(warnMessages).contains(message);
+  }
+
+  @Then("^the resolution of \"([^\"]*)\" should be \"([^\"]*)\"$")
+  public void theResolutionOfShouldBe(String artifact, String version) throws Throwable {
+    for (Resolved resolved : resolutionResult.resolved()) {
+      if (artifact.equals(resolved.key())) {
+        if (version.equals(resolved.version())) {
+          return;
+        } else {
+          throw new IllegalStateException(String.format("Resolution of artifact %s found with unexpected version: %s.", artifact, resolved.version()));
+        }
+      }
+    }
+
+    throw new IllegalStateException(String.format("No imported artifact for %s found.", artifact));
   }
 }

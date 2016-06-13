@@ -15,6 +15,9 @@ public abstract class AbstractResolutionResult {
   public abstract List<Alias> aliases();
 
   @Value.Parameter
+  public abstract List<Resolve> resolves();
+
+  @Value.Parameter
   public abstract List<Resolved> resolved();
 
   @Value.Parameter
@@ -25,7 +28,11 @@ public abstract class AbstractResolutionResult {
   }
 
   public static ResolutionResult combine(AbstractResolutionResult left, AbstractResolutionResult right) {
-    return ResolutionResult.of(combine(left.aliases(), right.aliases()), combine(left.resolved(), right.resolved()), combine(left.locked(), right.locked()));
+    return ResolutionResult.of(
+        combine(left.aliases(), right.aliases()),
+        combine(left.resolves(), right.resolves()),
+        combine(left.resolved(), right.resolved()),
+        combine(left.locked(), right.locked()));
   }
 
   private static <T> List<T> combine(List<T> left, List<T> right) {
@@ -33,7 +40,7 @@ public abstract class AbstractResolutionResult {
   }
 
   public static ResolutionResult empty() {
-    return ResolutionResult.of(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    return ResolutionResult.of(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
   }
 
   public static final Collector<ResolutionResult, ?, ResolutionResult> REDUCING =
