@@ -16,7 +16,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -103,16 +105,31 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         comments(res.comment()),
         res.resolvedArtifact().group().getText(),
         res.resolvedArtifact().artifactId().getText(),
-        res.resolvedArtifact().version().getText());
+        res.resolvedArtifact().version().getText(),
+        res.unlocked() != null);
   }
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext res) {
+
+    Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
+
+    Optional<Pattern> filteringRegex = res.filtering() == null ? Optional.empty() : Optional.of(compileRegexLiteral(res.filtering().filter().getText()));
+
+    if (bound == Bound.SNAPSHOT) {
+      filteringRegex = Optional.of(Pattern.compile(""));
+    }
+
     return Resolve.of(
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
         Bound.valueOf(res.bounds().getText().toUpperCase()),
-        range(res.rangedArtifact().range()));
+        range(res.rangedArtifact().range()),
+        filteringRegex);
+  }
+
+  private Pattern compileRegexLiteral(String regex) {
+    return Pattern.compile(regex.substring(1, regex.length() - 1));
   }
 
   private Alias resolveAlias(RangeResolverParser.AliasContext res) {

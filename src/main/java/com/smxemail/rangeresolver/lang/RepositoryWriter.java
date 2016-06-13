@@ -2,6 +2,7 @@ package com.smxemail.rangeresolver.lang;
 
 import com.google.common.base.Strings;
 import com.smxemail.rangeresolver.api.Alias;
+import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
@@ -30,7 +31,11 @@ public class RepositoryWriter {
 
         for (Import imported : rangeResolver.imports()) {
           printComments(pw, imported.comments());
-          pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+          if (imported.unlocked()) {
+            pw.printf("import unlocked %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+          } else {
+            pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+          }
         }
       }
 
@@ -38,8 +43,16 @@ public class RepositoryWriter {
         pw.println();
 
         for (Resolve resolve : rangeResolver.resolves()) {
+
+          String boundSpec = resolve.bounds().toString().toLowerCase();
+          String versionRange = resolve.range().asVersionRange();
+
           printComments(pw, resolve.comments());
-          pw.printf("resolve %s %s:%s:%s;\n", resolve.bounds().toString().toLowerCase(), resolve.group(), resolve.artifact(), resolve.range().asVersionRange());
+          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
+            pw.printf("resolve %s %s:%s:%s filtering /%s/;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange, resolve.filtering().get());
+          } else {
+            pw.printf("resolve %s %s:%s:%s;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange);
+          }
         }
       }
 

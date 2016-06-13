@@ -2,6 +2,9 @@ package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;
 
+import java.util.Optional;
+import java.util.regex.Pattern;
+
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ARTIFACT_VERSION;
 
 @Value.Immutable
@@ -21,6 +24,9 @@ public abstract class AbstractResolve implements PropertyBased {
 
   @Value.Parameter
   public abstract Range range();
+
+  @Value.Parameter
+  public abstract Optional<Pattern> filtering();
 
   @Value.Derived
   public String key() {

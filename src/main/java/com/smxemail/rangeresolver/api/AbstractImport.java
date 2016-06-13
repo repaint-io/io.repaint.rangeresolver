@@ -17,6 +17,9 @@ public abstract class AbstractImport {
   @Value.Parameter
   public abstract String version();
 
+  @Value.Parameter
+  public abstract boolean unlocked();
+
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());
