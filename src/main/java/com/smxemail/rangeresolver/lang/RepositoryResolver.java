@@ -242,14 +242,25 @@ public class RepositoryResolver {
       rangeRequest.setArtifact(artifact);
       rangeRequest.setRepositories(repositories);
 
-      List<Version> releasesOnly =
-          repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream().filter(filterVersion(resolve)).collect(Collectors.toList());
+      Version boundVersion;
+      List<Version> resolvedVersions = repositorySystem.resolveVersionRange(session, rangeRequest).getVersions();
+      if (resolvedVersions.size() == 1) {
+        boundVersion = resolvedVersions.get(0);
+      } else {
+        List<Version> releasesOnly = resolvedVersions.stream().filter(filterVersion(resolve)).collect(Collectors.toList());
+        if (releasesOnly.isEmpty()) {
+          Resolved originalResolution = originalResolvedThings.get(resolve.key());
+          if (originalResolution != null) {
+            warningLogger.accept(String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(),
+                                               originalResolution.version()));
+            return originalResolution;
+          } else {
+            throw missingReleases(resolve, sourceReference);
+          }
+        }
 
-      if (releasesOnly.isEmpty()) {
-        throw missingReleases(resolve, sourceReference);
+        boundVersion = resolve.bounds() == Bound.LOWEST ? releasesOnly.get(0) : releasesOnly.get(releasesOnly.size() - 1);
       }
-
-      Version boundVersion = resolve.bounds() == Bound.LOWEST ? releasesOnly.get(0) : releasesOnly.get(releasesOnly.size() - 1);
 
       if (boundVersion != null) {
 
