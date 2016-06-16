@@ -242,24 +242,21 @@ public class RepositoryResolver {
       rangeRequest.setArtifact(artifact);
       rangeRequest.setRepositories(repositories);
 
-      Version boundVersion;
-      List<Version> resolvedVersions = repositorySystem.resolveVersionRange(session, rangeRequest).getVersions();
-      if (resolvedVersions.size() == 1) {
-        boundVersion = resolvedVersions.get(0);
-      } else {
-        List<Version> releasesOnly = resolvedVersions.stream().filter(filterVersion(resolve)).collect(Collectors.toList());
-        if (releasesOnly.isEmpty()) {
-          Resolved originalResolution = originalResolvedThings.get(resolve.key());
-          if (originalResolution != null) {
-            warningLogger.accept(String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(),
-                                               originalResolution.version()));
-            return originalResolution;
-          } else {
-            throw missingReleases(resolve, sourceReference);
-          }
-        }
+      Resolved originalResolution = originalResolvedThings.get(resolve.key());
 
-        boundVersion = resolve.bounds() == Bound.LOWEST ? releasesOnly.get(0) : releasesOnly.get(releasesOnly.size() - 1);
+      Version boundVersion = null;
+      List<Version> resolvedVersions = repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream()
+                                                       .filter(filterVersion(resolve)).collect(Collectors.toList());
+      if (resolvedVersions.isEmpty()) {
+        if (originalResolution != null) {
+          warningLogger.accept(String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(),
+                                             originalResolution.version()));
+          return originalResolution;
+        } else {
+          throw missingReleases(resolve, sourceReference);
+        }
+      } else {
+        boundVersion = resolve.bounds() == Bound.LOWEST ? resolvedVersions.get(0) : resolvedVersions.get(resolvedVersions.size() - 1);
       }
 
       if (boundVersion != null) {
@@ -269,7 +266,6 @@ public class RepositoryResolver {
         // was the resolved item already resolved? and if so, only return the new resolution if newer, otherwise keep the original with it's original
         // resolved from lines.
         if (originalResolvedThings.containsKey(resolved.key())) {
-          Resolved originalResolution = originalResolvedThings.get(resolved.key());
           if (!isNewerVersion(resolved.version(), originalResolution.version()) || sourceReference.equals(originalResolution.resolvedFrom())) {
             return originalResolution;
           }
