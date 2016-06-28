@@ -266,7 +266,7 @@ public class RepositoryResolver {
         // was the resolved item already resolved? and if so, only return the new resolution if newer, otherwise keep the original with it's original
         // resolved from lines.
         if (originalResolvedThings.containsKey(resolved.key())) {
-          if (!isNewerVersion(resolved.version(), originalResolution.version()) || sourceReference.equals(originalResolution.resolvedFrom())) {
+          if (!isNewerVersion(resolved.version(), originalResolution.version()) && sourceReference.equals(originalResolution.resolvedFrom())) {
             return originalResolution;
           }
         }
