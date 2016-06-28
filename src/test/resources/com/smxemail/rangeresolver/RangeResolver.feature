@@ -70,7 +70,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0.rc1"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0.rc2"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
