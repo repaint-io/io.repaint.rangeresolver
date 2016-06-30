@@ -23,6 +23,10 @@ public abstract class AbstractRange {
     return Range.of("[", version, version, "]");
   }
 
+  public static Range openUpper(String lower, String upper) {
+    return Range.of("[", lower, upper, ")");
+  }
+
   @Value.Check
   protected void check() {
     if (isNewerVersion(lower(), upper())) {
@@ -33,4 +37,5 @@ public abstract class AbstractRange {
   public String asVersionRange() {
     return String.format("%s%s,%s%s", lowerChar(), lower(), upper(), upperChar());
   }
+
 }

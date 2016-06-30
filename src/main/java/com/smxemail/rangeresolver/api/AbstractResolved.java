@@ -28,6 +28,9 @@ public abstract class AbstractResolved {
   @Value.Parameter
   public abstract String propertyName();
 
+  @Value.Parameter
+  public abstract Range constrainedRange();
+
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());

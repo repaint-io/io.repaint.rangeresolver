@@ -78,26 +78,30 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
+    String version = res.resolvedArtifact().version().getText();
     return Resolved.of(
         comments(res.comment()),
         group,
         artifact,
-        res.resolvedArtifact().version().getText(),
+        version,
         res.resolvedFromArtifact().getText(),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)));
+        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
+        Range.fixed(version));
   }
 
   private Resolved resolveResolved(Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", res.resolvedArtifact().group().getText(), res.resolvedArtifact().artifactId().getText());
+    String version = res.resolvedArtifact().version().getText();
     return Resolved.of(
         comments(res.comment()),
         group,
         artifact,
-        res.resolvedArtifact().version().getText(),
+        version,
         res.resolvedFromArtifact().getText(),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)));
+        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
+        Range.fixed(version));
   }
 
   private Import resolveImport(RangeResolverParser.ImportedContext res) {
