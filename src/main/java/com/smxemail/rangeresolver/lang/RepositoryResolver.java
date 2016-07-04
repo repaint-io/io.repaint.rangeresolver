@@ -30,6 +30,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
@@ -236,32 +237,23 @@ public class RepositoryResolver {
       Resolve resolve) {
     try {
 
-      Artifact artifact = resolveToArtifact(resolve);
-
-      VersionRangeRequest rangeRequest = new VersionRangeRequest();
-      rangeRequest.setArtifact(artifact);
-      rangeRequest.setRepositories(repositories);
-
       Resolved originalResolution = originalResolvedThings.get(resolve.key());
 
-      Version boundVersion = null;
-      List<Version> resolvedVersions = repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream()
-                                                       .filter(filterVersion(resolve)).collect(Collectors.toList());
-      if (resolvedVersions.isEmpty()) {
+      Optional<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
+
+      if (!resolvedVersionRange.isPresent()) {
         if (originalResolution != null) {
-          warningLogger.accept(String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(),
-                                             originalResolution.version()));
+          warningLogger.accept(
+              String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(), originalResolution.version()));
           return originalResolution;
         } else {
           throw missingReleases(resolve, sourceReference);
         }
       } else {
-        boundVersion = resolve.bounds() == Bound.LOWEST ? resolvedVersions.get(0) : resolvedVersions.get(resolvedVersions.size() - 1);
-      }
+        Range constrainedRange = resolvedVersionRange.get();
+        String boundVersion = resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
 
-      if (boundVersion != null) {
-
-        Resolved resolved = Resolved.of("", resolve.group(), resolve.artifact(), boundVersion.toString(), sourceReference, resolve.propertyName());
+        Resolved resolved = Resolved.of("", resolve.group(), resolve.artifact(), boundVersion, sourceReference, resolve.propertyName(), constrainedRange);
 
         // was the resolved item already resolved? and if so, only return the new resolution if newer, otherwise keep the original with it's original
         // resolved from lines.
@@ -272,13 +264,34 @@ public class RepositoryResolver {
         }
 
         return resolved;
-      } else {
-        throw missingReleases(resolve, sourceReference);
       }
 
     } catch (RepositoryException e) {
       warningLogger.accept(e.getMessage());
       return null;
+    }
+  }
+
+  private Optional<Range> resolveVersionRange(RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve)
+      throws VersionRangeResolutionException {
+
+    Artifact artifact = resolveToArtifact(resolve);
+
+    VersionRangeRequest rangeRequest = new VersionRangeRequest();
+    rangeRequest.setArtifact(artifact);
+    rangeRequest.setRepositories(repositories);
+
+    List<Version> resolvedVersions =
+        repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream().filter(filterVersion(resolve)).collect(Collectors.toList());
+
+    if (resolvedVersions.isEmpty()) {
+      return Optional.empty();
+    } else {
+      if (resolvedVersions.size() == 1) {
+        return Optional.of(Range.fixed(resolvedVersions.get(0).toString()));
+      } else {
+        return Optional.of(Range.openUpper(resolvedVersions.get(0).toString(), resolvedVersions.get(resolvedVersions.size() - 1).toString()));
+      }
     }
   }
 
