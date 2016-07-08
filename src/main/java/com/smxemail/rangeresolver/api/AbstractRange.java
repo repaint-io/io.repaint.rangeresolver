@@ -35,7 +35,11 @@ public abstract class AbstractRange {
   }
 
   public String asVersionRange() {
-    return String.format("%s%s,%s%s", lowerChar(), lower(), upper(), upperChar());
+    if (lower().equals(upper())) {
+      return String.format("[%s]", lower());
+    } else {
+      return String.format("%s%s,%s%s", lowerChar(), lower(), upper(), upperChar());
+    }
   }
 
 }

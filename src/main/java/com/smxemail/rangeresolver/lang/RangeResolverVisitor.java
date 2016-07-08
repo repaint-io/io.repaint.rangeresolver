@@ -141,11 +141,15 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Range range(RangeResolverParser.RangeContext context) {
-    return Range.of(
-        context.rangeContents().lowerBound().getText(),
-        context.rangeContents().lowerBoundValue().getText(),
-        context.rangeContents().upperBoundValue().getText(),
-        context.rangeContents().upperBound().getText());
+    if (context.fixedRange() != null) {
+      return Range.fixed(context.fixedRange().value().getText());
+    } else {
+      return Range.of(
+          context.boundedRange().lowerBound().getText(),
+          context.boundedRange().lowerBoundValue().getText(),
+          context.boundedRange().upperBoundValue().getText(),
+          context.boundedRange().upperBound().getText());
+    }
   }
 
   private String comments(List<RangeResolverParser.CommentContext> comment) {
