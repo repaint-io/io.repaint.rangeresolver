@@ -70,7 +70,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0.rc2"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
@@ -79,25 +79,25 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.7.5"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
       """
       repository http://nexus.smxemail.com/nexus/content/groups/public/;
-      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
+      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0-SNAPSHOT"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
 
   Scenario: Resolution allow for explicit locked versions from Aether
     Given the following script:
       """
       repository http://nexus.smxemail.com/nexus/content/groups/public/;
-      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.7.2,2.7.2];
+      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.7.2"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
 
   Scenario: Write resolved DSL back out
     Given the following script:
@@ -110,7 +110,7 @@ Feature: Range Resolver
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
-      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
       // comment
@@ -131,7 +131,7 @@ Feature: Range Resolver
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
-      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
 
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
