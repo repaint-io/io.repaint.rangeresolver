@@ -41,5 +41,4 @@ public abstract class AbstractRange {
       return String.format("%s%s,%s%s", lowerChar(), lower(), upper(), upperChar());
     }
   }
-
 }

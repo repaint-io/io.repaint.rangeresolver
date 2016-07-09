@@ -77,14 +77,14 @@ public class RangeResolverStepdefs {
   }
 
   @When("^when writing the DSL back out$")
-  public void whenWritingTheDSLBackOut() throws Throwable {
+  public void whenWritingTheDSLBackOut() {
     StringWriter sw = new StringWriter();
     RepositoryWriter.writeRangeResolveSource(rangeResolver, sw);
     rangeResolverSource = sw.toString();
   }
 
   @Then("^it should match the follow script:$")
-  public void itShouldMatchTheFollowScript(String script) throws Throwable {
+  public void itShouldMatchTheFollowScript(String script) throws IOException {
     assertWithMessage("Expected DSL does not match").that(rangeResolverSource.trim()).isEqualTo(script.trim());
     rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
   }
@@ -101,7 +101,7 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^the dependency \"([^\"]*)\" should be resolving against the \"([^\"]*)\" range \"([^\"]*)\"$")
-  public void theDependencyShouldBeResolvingAgainstTheRange(String artifact, String bounds, String range) throws Throwable {
+  public void theDependencyShouldBeResolvingAgainstTheRange(String artifact, String bounds, String range) {
     for (Resolve resolve : rangeResolver.resolves()) {
       if (artifact.equals(resolve.key()) && resolve.bounds().toString().toLowerCase().equals(bounds) && resolve.range().asVersionRange().equals(range)) {
         return;
@@ -112,7 +112,7 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^the dependency \"([^\"]*)\" should use the property \"([^\"]*)\"$")
-  public void theDependencyShouldUseTheProperty(String artifact, String property) throws Throwable {
+  public void theDependencyShouldUseTheProperty(String artifact, String property) {
     for (Alias alias : rangeResolver.aliases()) {
       if (artifact.equals(alias.key()) && property.equals(alias.propertyName())) {
         return;
@@ -127,7 +127,7 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^the dependency \"([^\"]*)\" should be resolved from \"([^\"]*)\"$")
-  public void theDependencyShouldBeResolvedFromOn(String artifact, String from) throws Throwable {
+  public void theDependencyShouldBeResolvedFromOn(String artifact, String from) {
     for (Resolved resolved : rangeResolver.resolved()) {
       if (artifact.equals(resolved.key() + ":" + resolved.version()) && resolved.resolvedFrom().equals(from)) {
         return;
@@ -137,12 +137,12 @@ public class RangeResolverStepdefs {
   }
 
   @Given("^that \"([^\"]*)\" was previously imported$")
-  public void thatWasPreviouslyImported(String imported) throws Throwable {
+  public void thatWasPreviouslyImported(String imported) {
     previousImports.add(imported);
   }
 
   @Then("^resolving with aether$")
-  public void resolvingWithAetherShouldSucceed() throws Throwable {
+  public void resolvingWithAetherShouldSucceed() {
     try {
       resolutionResult = repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
     } catch (Exception e) {
@@ -151,7 +151,7 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^it should succeed$")
-  public void itShouldSucceed() throws Throwable {
+  public void itShouldSucceed() {
     assertWithMessage("It should have succeeded").that(rangeResolverException).isNull();
   }
 
@@ -164,7 +164,7 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^the import \"([^\"]*)\" should be declared$")
-  public void theImportShouldBeDeclared(String artifact) throws Throwable {
+  public void theImportShouldBeDeclared(String artifact) {
     for (Import imported : rangeResolver.imports()) {
       if (artifact.equals(imported.key() + ":" + imported.version())) {
         return;
@@ -175,17 +175,17 @@ public class RangeResolverStepdefs {
   }
 
   @Then("^it should fail with \"([^\"]*)\"$")
-  public void itShouldFailWith(String message) throws Throwable {
+  public void itShouldFailWith(String message) {
     assertWithMessage("The Script should has expected exception message!").that(rangeResolverException.getMessage()).isEqualTo(message);
   }
 
   @And("^a warning message \"([^\"]*)\" should be logged$")
-  public void aWarningMessageShouldBeLogged(String message) throws Throwable {
+  public void aWarningMessageShouldBeLogged(String message) {
     assertWithMessage("The message \"%s\" was not logged.", message).that(warnMessages).contains(message);
   }
 
   @Then("^the resolution of \"([^\"]*)\" should be \"([^\"]*)\"$")
-  public void theResolutionOfShouldBe(String artifact, String version) throws Throwable {
+  public void theResolutionOfShouldBe(String artifact, String version) {
     for (Resolved resolved : resolutionResult.resolved()) {
       if (artifact.equals(resolved.key())) {
         if (version.equals(resolved.version())) {
