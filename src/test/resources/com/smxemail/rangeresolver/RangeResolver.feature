@@ -88,13 +88,13 @@ Feature: Range Resolver
       resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.1-SNAPSHOT"
 
   Scenario: Resolution allow for explicit locked versions from Aether
     Given the following script:
       """
       repository http://nexus.smxemail.com/nexus/content/groups/public/;
-      resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0];
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0];
       """
     When resolving with aether
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"

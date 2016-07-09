@@ -22,12 +22,12 @@ import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
+import org.eclipse.aether.repository.LocalArtifactRequest;
+import org.eclipse.aether.repository.LocalArtifactResult;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
-import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
@@ -37,6 +37,7 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -202,16 +203,27 @@ public class RepositoryResolver {
   public RangeResolver resolveImport(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i)
       throws ArtifactResolutionException, IOException {
 
-    Resolve imported = Resolve.of("", i.group(), i.artifact(), Bound.HIGHEST, Range.fixed(i.version()), Optional.empty());
+    Bound importBound = i.version().endsWith("-SNAPSHOT") ? Bound.SNAPSHOT : Bound.HIGHEST;
+    Resolve imported = Resolve.of("", i.group(), i.artifact(), importBound, Range.fixed(i.version()), Optional.empty());
 
     // TODO Make resolveArtifact accept both Resolve and Imported
-    resolveArtifact(sourceReference, session, repositories, Collections.emptyMap(), imported);
+    try {
+      resolveArtifact(sourceReference, session, repositories, Collections.emptyMap(), imported);
+    } catch (IllegalStateException ignored) {
+      // ignore
+    }
+
     Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
+    File artifactFile;
 
-    ArtifactRequest artifactRequest = new ArtifactRequest().setArtifact(artifact).setRepositories(repositories);
-    ArtifactResult artifactResult = repositorySystem.resolveArtifact(session, artifactRequest);
+    LocalArtifactRequest lar = new LocalArtifactRequest(artifact, repositories, "");
+    LocalArtifactResult localArtifactResult = session.getLocalRepositoryManager().find(session, lar);
+    artifactFile = localArtifactResult.getFile();
+    if (artifactFile == null) {
+      throw new IllegalArgumentException("Unable to resolve " + artifact.toString() + " in either local or remote repositories.");
+    }
 
-    RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactResult.getArtifact().getFile()));
+    RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactFile));
 
     if (i.unlocked()) {
       importedRangeResolver = unlockDependencies(importedRangeResolver);
@@ -276,7 +288,6 @@ public class RepositoryResolver {
       throws VersionRangeResolutionException {
 
     Artifact artifact = resolveToArtifact(resolve);
-
     VersionRangeRequest rangeRequest = new VersionRangeRequest();
     rangeRequest.setArtifact(artifact);
     rangeRequest.setRepositories(repositories);
