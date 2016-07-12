@@ -126,6 +126,26 @@ public class RangeResolverStepdefs {
     throw new IllegalStateException(String.format("No resolution for %s with alias %s found.", artifact, property));
   }
 
+  @And("^the dependency \"([^\"]*)\" should use the classifer \"([^\"]*)\"$")
+  public void theDependencyShouldUseTheClassifer(String artifact, String classifier) {
+    for (Resolve resolve : rangeResolver.resolves()) {
+      if (artifact.equals(resolve.key()) && classifier.equals(resolve.classifier())) {
+        return;
+      }
+    }
+    throw new IllegalStateException(String.format("No resolution for %s with classifier %s found.", artifact, classifier));
+  }
+
+  @And("^the dependency \"([^\"]*)\" should use the extension \"([^\"]*)\"$")
+  public void theDependencyShouldUseTheExtension(String artifact, String extension) {
+    for (Resolve resolve : rangeResolver.resolves()) {
+      if (artifact.equals(resolve.key()) && extension.equals(resolve.extension())) {
+        return;
+      }
+    }
+    throw new IllegalStateException(String.format("No resolution for %s with extension %s found.", artifact, extension));
+  }
+
   @Then("^the dependency \"([^\"]*)\" should be resolved from \"([^\"]*)\"$")
   public void theDependencyShouldBeResolvedFromOn(String artifact, String from) {
     for (Resolved resolved : rangeResolver.resolved()) {

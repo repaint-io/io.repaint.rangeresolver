@@ -20,6 +20,12 @@ public abstract class AbstractResolve implements PropertyBased {
   public abstract String artifact();
 
   @Value.Parameter
+  public abstract String classifier();
+
+  @Value.Parameter
+  public abstract String extension();
+
+  @Value.Parameter
   public abstract Bound bounds();
 
   @Value.Parameter
