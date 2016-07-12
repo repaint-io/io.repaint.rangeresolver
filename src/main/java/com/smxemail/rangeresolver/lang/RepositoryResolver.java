@@ -1,6 +1,7 @@
 package com.smxemail.rangeresolver.lang;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
 import com.smxemail.rangeresolver.api.Bound;
@@ -27,6 +28,7 @@ import org.eclipse.aether.repository.LocalArtifactResult;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
@@ -54,6 +56,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RepositoryResolver {
 
@@ -97,7 +100,6 @@ public class RepositoryResolver {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     LocalRepository localRepo = new LocalRepository(localRepoDir);
     session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, localRepo));
-    session.setTransferListener(new ConsoleTransferListener(infoLogger));
     return session;
   }
 
@@ -153,10 +155,10 @@ public class RepositoryResolver {
         toResolve
             .stream()
             .filter(resolve -> !isLocked(sourceReference, originallyLockedThings, resolve))
-            .map(resolve -> resolveArtifact(sourceReference, session, repositories, originallyResolvedThings, resolve))
+            .flatMap(resolve -> optionalStream(resolveArtifact(sourceReference, session, repositories, originallyResolvedThings, resolve)))
             .collect(Collectors.toList());
 
-    Set<Resolved> allResolved = new TreeSet<>(Comparator.comparing(Resolved::key));
+    Set<Resolved> allResolved = new TreeSet<>(Comparator.nullsFirst(Comparator.comparing(Resolved::key)));
     allResolved.addAll(resolvedThings);
     allResolved.addAll(resolvedImportedThings.locked());
     allResolved.addAll(resolvedImportedThings.resolved());
@@ -165,6 +167,10 @@ public class RepositoryResolver {
     warnAboutResolutionConflicts(sortedUniqueResolved);
 
     return ResolutionResult.of(resolvedImportedThings.aliases(), rangeResolver.resolves(), sortedUniqueResolved, rangeResolver.locked());
+  }
+
+  private <T> Stream<T> optionalStream(Optional<T> value) {
+    return value.isPresent() ? Stream.of(value.get()) : Stream.empty();
   }
 
   /**
@@ -204,7 +210,7 @@ public class RepositoryResolver {
       throws ArtifactResolutionException, IOException {
 
     Bound importBound = i.version().endsWith("-SNAPSHOT") ? Bound.SNAPSHOT : Bound.HIGHEST;
-    Resolve imported = Resolve.of("", i.group(), i.artifact(), importBound, Range.fixed(i.version()), Optional.empty());
+    Resolve imported = Resolve.of("", i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, importBound, Range.fixed(i.version()), Optional.empty());
 
     // TODO Make resolveArtifact accept both Resolve and Imported
     try {
@@ -241,7 +247,7 @@ public class RepositoryResolver {
     return importedRangeResolver;
   }
 
-  private Resolved resolveArtifact(
+  private Optional<Resolved> resolveArtifact(
       String sourceReference,
       RepositorySystemSession session,
       List<RemoteRepository> repositories,
@@ -257,7 +263,7 @@ public class RepositoryResolver {
         if (originalResolution != null) {
           warningLogger.accept(
               String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(), originalResolution.version()));
-          return originalResolution;
+          return Optional.of(originalResolution);
         } else {
           throw missingReleases(resolve, sourceReference);
         }
@@ -271,21 +277,21 @@ public class RepositoryResolver {
         // resolved from lines.
         if (originalResolvedThings.containsKey(resolved.key())) {
           if (!isNewerVersion(resolved.version(), originalResolution.version()) && sourceReference.equals(originalResolution.resolvedFrom())) {
-            return originalResolution;
+            return Optional.of(originalResolution);
           }
         }
 
-        return resolved;
+        return Optional.of(resolved);
       }
 
     } catch (RepositoryException e) {
       warningLogger.accept(e.getMessage());
-      return null;
+      return Optional.empty();
     }
   }
 
   private Optional<Range> resolveVersionRange(RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve)
-      throws VersionRangeResolutionException {
+      throws VersionRangeResolutionException, ArtifactResolutionException {
 
     Artifact artifact = resolveToArtifact(resolve);
     VersionRangeRequest rangeRequest = new VersionRangeRequest();
@@ -298,11 +304,25 @@ public class RepositoryResolver {
     if (resolvedVersions.isEmpty()) {
       return Optional.empty();
     } else {
-      if (resolvedVersions.size() == 1) {
-        return Optional.of(Range.fixed(resolvedVersions.get(0).toString()));
-      } else {
-        return Optional.of(Range.openUpper(resolvedVersions.get(0).toString(), resolvedVersions.get(resolvedVersions.size() - 1).toString()));
-      }
+      Range resolvedRange = resolveBoundRange(resolvedVersions);
+      Set<ArtifactRequest> resolvedArtifactRequests = resovleArtifactRequests(repositories, resolve, resolvedRange);
+      repositorySystem.resolveArtifacts(session, resolvedArtifactRequests);
+      return Optional.of(resolvedRange);
+    }
+  }
+
+  private ImmutableSet<ArtifactRequest> resovleArtifactRequests(List<RemoteRepository> repositories, Resolve resolve, Range range) {
+    Artifact lowerArtifact = new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), range.lower());
+    Artifact upperAritifact = new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), range.upper());
+
+    return ImmutableSet.of(new ArtifactRequest(lowerArtifact, repositories, ""), new ArtifactRequest(upperAritifact, repositories, ""));
+  }
+
+  private Range resolveBoundRange(List<Version> versions) {
+    if (versions.size() == 1) {
+      return Range.fixed(versions.get(0).toString());
+    } else {
+      return Range.openUpper(versions.get(0).toString(), versions.get(versions.size() - 1).toString());
     }
   }
 

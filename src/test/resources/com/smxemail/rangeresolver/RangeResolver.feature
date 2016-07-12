@@ -45,6 +45,17 @@ Feature: Range Resolver
     Then the dependency "com.smxemail:com.smxemail.api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
     And the dependency "com.smxemail:com.smxemail.api" should use the property "test.prop"
     And the dependency "com.smxemail:com.smxemail.impl" should use the property "com.smxemail.impl.version"
+    And the dependency "com.smxemail:com.smxemail.impl" should use the classifer ""
+    And the dependency "com.smxemail:com.smxemail.impl" should use the extension "jar"
+
+  Scenario: Parse resolution request with classifer/extension
+    Given the following script:
+      """
+      resolve highest com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.23,4.0.0):tile:xml;
+      """
+    Then the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should be resolving against the "highest" range "[3.0.23,4.0.0)"
+    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the classifer "tile"
+    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the extension "xml"
 
   Scenario: Parse resolved artifact
     Given the following script:

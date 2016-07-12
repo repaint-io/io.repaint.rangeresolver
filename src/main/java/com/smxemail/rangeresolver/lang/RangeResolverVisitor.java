@@ -123,10 +123,20 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       filteringRegex = Optional.of(Pattern.compile(""));
     }
 
+    String extension = "jar";
+    String classifier = "";
+    if (res.rangedArtifact().artifactSpecifier() != null) {
+      RangeResolverParser.ArtifactSpecifierContext artifactSpecifier = res.rangedArtifact().artifactSpecifier();
+      extension = artifactSpecifier.extension().getText();
+      classifier = artifactSpecifier.classifier().getText();
+    }
+
     return Resolve.of(
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
+        classifier,
+        extension,
         Bound.valueOf(res.bounds().getText().toUpperCase()),
         range(res.rangedArtifact().range()),
         filteringRegex);
