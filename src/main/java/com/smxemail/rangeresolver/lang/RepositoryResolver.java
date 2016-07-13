@@ -342,7 +342,7 @@ public class RepositoryResolver {
   }
 
   private DefaultArtifact resolveToArtifact(Resolve resolve) {
-    return new DefaultArtifact(String.format("%s:%s:%s", resolve.group(), resolve.artifact(), resolve.range().asVersionRange()));
+    return new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), resolve.range().asVersionRange());
   }
 
   private boolean isLocked(String sourceReference, Map<String, Resolved> lockedProperties, Resolve resolve) {
