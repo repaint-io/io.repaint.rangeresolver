@@ -123,20 +123,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       filteringRegex = Optional.of(Pattern.compile(""));
     }
 
-    String extension = "jar";
-    String classifier = "";
-    if (res.rangedArtifact().artifactSpecifier() != null) {
-      RangeResolverParser.ArtifactSpecifierContext artifactSpecifier = res.rangedArtifact().artifactSpecifier();
-      extension = artifactSpecifier.extension().getText();
-      classifier = artifactSpecifier.classifier().getText();
-    }
-
     return Resolve.of(
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
-        classifier,
-        extension,
+        "", "pom",
         Bound.valueOf(res.bounds().getText().toUpperCase()),
         range(res.rangedArtifact().range()),
         filteringRegex);
@@ -153,6 +144,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   private Range range(RangeResolverParser.RangeContext context) {
     if (context.fixedRange() != null) {
       return Range.fixed(context.fixedRange().value().getText());
+    } else if (context.implicitRange() != null) {
+      return Range.fixed(context.implicitRange().getText());
     } else {
       return Range.of(
           context.boundedRange().lowerBound().getText(),

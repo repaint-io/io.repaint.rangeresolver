@@ -1,6 +1,5 @@
 package com.smxemail.rangeresolver.lang;
 
-import com.google.common.base.Strings;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
@@ -11,6 +10,8 @@ import com.smxemail.rangeresolver.api.Resolved;
 
 import java.io.PrintWriter;
 import java.io.Writer;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class RepositoryWriter {
 
@@ -46,12 +47,13 @@ public class RepositoryWriter {
 
           String boundSpec = resolve.bounds().toString().toLowerCase();
           String versionRange = resolve.range().asVersionRange();
+          String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
 
           printComments(pw, resolve.comments());
           if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
-            pw.printf("resolve %s %s:%s:%s filtering /%s/;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange, resolve.filtering().get());
+            pw.printf("resolve %s %s filtering /%s/;\n", boundSpec, gav, resolve.filtering().get());
           } else {
-            pw.printf("resolve %s %s:%s:%s;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange);
+            pw.printf("resolve %s %s;\n", boundSpec, gav);
           }
         }
       }
@@ -86,7 +88,7 @@ public class RepositoryWriter {
   }
 
   private static void printComments(PrintWriter pw, String comments) {
-    if (!Strings.isNullOrEmpty(comments)) {
+    if (!isNullOrEmpty(comments)) {
       pw.println(comments);
     }
   }

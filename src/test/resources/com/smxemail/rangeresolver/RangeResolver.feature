@@ -46,16 +46,7 @@ Feature: Range Resolver
     And the dependency "com.smxemail:com.smxemail.api" should use the property "test.prop"
     And the dependency "com.smxemail:com.smxemail.impl" should use the property "com.smxemail.impl.version"
     And the dependency "com.smxemail:com.smxemail.impl" should use the classifer ""
-    And the dependency "com.smxemail:com.smxemail.impl" should use the extension "jar"
-
-  Scenario: Parse resolution request with classifer/extension
-    Given the following script:
-      """
-      resolve highest com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.23,4.0.0):tile:xml;
-      """
-    Then the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should be resolving against the "highest" range "[3.0.23,4.0.0)"
-    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the classifer "tile"
-    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the extension "xml"
+    And the dependency "com.smxemail:com.smxemail.impl" should use the extension "pom"
 
   Scenario: Parse resolved artifact
     Given the following script:
@@ -120,6 +111,7 @@ Feature: Range Resolver
       import unlocked com.talios.test:bill-of-materials:1.0.2;
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve highest com.talios.test:bill-of-materials:1.0.2;
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       // comment
@@ -141,6 +133,7 @@ Feature: Range Resolver
 
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve highest com.talios.test:bill-of-materials:[1.0.2];
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
 
