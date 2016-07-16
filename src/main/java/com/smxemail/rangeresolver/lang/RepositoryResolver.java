@@ -145,6 +145,7 @@ public class RepositoryResolver {
     Map<String, Resolved> originallyLockedThings = resolvedImportedThings.locked().stream().collect(Resolved.collectByKey);
     originallyLockedThings.putAll(rangeResolver.locked().stream().collect(Resolved.collectByKey));
 
+    Map<String, Resolved> locallyResolvedThings = rangeResolver.resolved().stream().collect(Resolved.collectByKey);
     Map<String, Resolved> originallyResolvedThings = resolvedImportedThings.resolved().stream().collect(Resolved.collectByKey);
 
     Map<String, Resolve> toResolve = Resolve.mapByKey(resolvedImportedThings.resolves());
@@ -175,8 +176,13 @@ public class RepositoryResolver {
                 },
                 (resolution, resolved) -> {
                   Resolved existingResolved = resolution.get(resolved.key());
+                  Resolved locallyResolved = locallyResolvedThings.get(resolved.key());
                   if (existingResolved == null || !existingResolved.version().equals(resolved.version())) {
-                    resolution.put(resolved.key(), resolved);
+                    if (locallyResolved == null || !locallyResolved.version().equals(resolved.version())) {
+                      resolution.put(resolved.key(), resolved);
+                    } else {
+                      resolution.put(locallyResolved.key(), locallyResolved);
+                    }
                   }
                 },
                 Map::putAll);
