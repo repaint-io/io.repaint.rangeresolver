@@ -5,10 +5,10 @@ Feature: Range Resolver
       """
       // Declare repository locations, independent of build tool.
       repository http://SERVER_HERE/nexus/content/repositories/releases;
-      repository http://SERVER_THERE/nexus/content/repositories/snapshots;
+      repository http://SERVER_THERE/nexus/content/repositories/snapshots as snapshots;
       """
-    Then the repository "http://SERVER_HERE/nexus/content/repositories/releases" should be declared
-    And the repository "http://SERVER_THERE/nexus/content/repositories/snapshots" should be declared
+    Then the repository "http://SERVER_HERE/nexus/content/repositories/releases" should be declared with a grouping of "default"
+    And the repository "http://SERVER_THERE/nexus/content/repositories/snapshots" should be declared with a grouping of "snapshots"
 
   Scenario: Parse import declaration
     Given the following script:
@@ -105,7 +105,8 @@ Feature: Range Resolver
     Given the following script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
+      repository http://nexus.smxemail.com/nexus/group/public;
       // comment
       import com.talios:bill-of-materials:1.0.2;
       import unlocked com.talios.test:bill-of-materials:1.0.2;
@@ -125,7 +126,8 @@ Feature: Range Resolver
     Then it should match the follow script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
+      repository http://nexus.smxemail.com/nexus/group/public;
 
       // comment
       import com.talios:bill-of-materials:1.0.2;

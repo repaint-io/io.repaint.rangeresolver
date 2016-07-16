@@ -8,6 +8,7 @@ import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.Range;
 import com.smxemail.rangeresolver.api.RangeResolver;
+import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
@@ -45,13 +46,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -125,8 +127,10 @@ public class RepositoryResolver {
   public ResolutionResult resolveRanges(List<String> previouslyImportedGavs, RangeResolver rangeResolver, String sourceReference) throws RepositoryException {
     RepositorySystemSession session = newRepositorySystemSession();
 
+    // TODO Should import against a specified repository - rather than all?
+    Collection<Repository> repositoryImmutableCollection = rangeResolver.repositories().values();
     List<RemoteRepository> repositories =
-        rangeResolver.repositories().stream().map(repo -> buildRepository(repo, updateSnapshots)).collect(Collectors.toList());
+        buildeRemoteRepositories(repositoryImmutableCollection);
 
     repositorySystem.newResolutionRepositories(session, repositories);
 
@@ -138,35 +142,54 @@ public class RepositoryResolver {
             .distinct()
             .collect(ResolutionResult.REDUCING);
 
-    List<Resolve> toResolve = new ArrayList<>(rangeResolver.resolves());
-    toResolve.addAll(resolvedImportedThings.resolves());
-    List<MetadataRequest> metadataRequests = toResolve.stream().map(rep -> buildMetaDataRequest(rep)).collect(Collectors.toList());
+    Map<String, Resolved> originallyLockedThings = resolvedImportedThings.locked().stream().collect(Resolved.collectByKey);
+    originallyLockedThings.putAll(rangeResolver.locked().stream().collect(Resolved.collectByKey));
 
-    infoLogger.accept("Resolving metadata....");
+    Map<String, Resolved> originallyResolvedThings = resolvedImportedThings.resolved().stream().collect(Resolved.collectByKey);
+
+    Map<String, Resolve> toResolve = Resolve.mapByKey(resolvedImportedThings.resolves());
+    toResolve.putAll(Resolve.mapByKey(rangeResolver.resolves()));
+
+    List<MetadataRequest> metadataRequests = toResolve.values().stream().map(rep -> buildMetaDataRequest(rep)).collect(Collectors.toList());
+
+    infoLogger.accept("Resolving metadata for " + sourceReference);
     repositorySystem.resolveMetadata(session, metadataRequests);
 
-    Map<String, Resolved> originallyLockedThings = rangeResolver.locked().stream().collect(Resolved.collectByKey);
-    originallyLockedThings.putAll(resolvedImportedThings.locked().stream().collect(Resolved.collectByKey));
-
-    Map<String, Resolved> originallyResolvedThings = rangeResolver.resolved().stream().collect(Resolved.collectByKey);
     originallyResolvedThings.putAll(originallyLockedThings);
 
-    List<Resolved> resolvedThings =
+    Map<String, Resolved> resolvedThings =
         toResolve
+            .values()
             .stream()
             .filter(resolve -> !isLocked(sourceReference, originallyLockedThings, resolve))
-            .flatMap(resolve -> optionalStream(resolveArtifact(sourceReference, session, repositories, originallyResolvedThings, resolve)))
-            .collect(Collectors.toList());
+            .flatMap(resolve -> optionalStream(resolveArtifact(sourceReference, session,
+                                                               buildeRemoteRepositories(rangeResolver.repositories().get(resolve.resolutionGrouping())),
+                                                               originallyResolvedThings,
+                                                               resolve)))
+            .collect(
+                () -> {
+                  Map<String, Resolved> allResolved = new TreeMap<>(Comparator.naturalOrder());
+                  allResolved.putAll(originallyResolvedThings);
+                  allResolved.putAll(originallyLockedThings);
+                  return allResolved;
+                },
+                (resolution, resolved) -> {
+                  Resolved existingResolved = resolution.get(resolved.key());
+                  if (existingResolved == null || !existingResolved.version().equals(resolved.version())) {
+                    resolution.put(resolved.key(), resolved);
+                  }
+                },
+                Map::putAll);
 
-    Set<Resolved> allResolved = new TreeSet<>(Comparator.nullsFirst(Comparator.comparing(Resolved::key)));
-    allResolved.addAll(resolvedThings);
-    allResolved.addAll(resolvedImportedThings.locked());
-    allResolved.addAll(resolvedImportedThings.resolved());
-    List<Resolved> sortedUniqueResolved = ImmutableList.copyOf(allResolved);
+    List<Resolved> sortedUniqueResolved = ImmutableList.copyOf(resolvedThings.values());
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
 
     return ResolutionResult.of(resolvedImportedThings.aliases(), rangeResolver.resolves(), sortedUniqueResolved, rangeResolver.locked());
+  }
+
+  private List<RemoteRepository> buildeRemoteRepositories(Collection<Repository> repositoryImmutableCollection) {
+    return repositoryImmutableCollection.stream().map(repo -> buildRepository(repo, updateSnapshots)).collect(Collectors.toList());
   }
 
   private <T> Stream<T> optionalStream(Optional<T> value) {
@@ -175,6 +198,7 @@ public class RepositoryResolver {
 
   /**
    * Group a list of resolved artifacts by their groupId:artifactId, warn if multiple entries are found.
+   *
    * @param resolved A list of {@link Resolved} items.
    */
   private void warnAboutResolutionConflicts(List<Resolved> resolved) {
@@ -210,7 +234,8 @@ public class RepositoryResolver {
       throws ArtifactResolutionException, IOException {
 
     Bound importBound = i.version().endsWith("-SNAPSHOT") ? Bound.SNAPSHOT : Bound.HIGHEST;
-    Resolve imported = Resolve.of("", i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, importBound, Range.fixed(i.version()), Optional.empty());
+    Resolve imported =
+        Resolve.of("", i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, importBound, Range.fixed(i.version()), Optional.empty(), sourceReference, "imported");
 
     // TODO Make resolveArtifact accept both Resolve and Imported
     try {
@@ -348,11 +373,9 @@ public class RepositoryResolver {
   private boolean isLocked(String sourceReference, Map<String, Resolved> lockedProperties, Resolve resolve) {
     Resolved locked = lockedProperties.get(resolve.key());
     if (locked != null && locked.resolvedFrom().equals(sourceReference)) {
-      infoLogger.accept(String.format("Skipping resolution of %s, artifact is locally locked.", resolve.artifact()));
       return true;
     }
     if (locked != null && !locked.resolvedFrom().equals(sourceReference)) {
-      infoLogger.accept(String.format("Re-resolving %s, artifact was originally locked from %s.", resolve.artifact(), locked.resolvedFrom()));
       return false;
     }
     return false;

@@ -20,10 +20,14 @@ public class RepositoryWriter {
     try (PrintWriter pw = new PrintWriter(writer)) {
 
       if (!rangeResolver.repositories().isEmpty()) {
-        for (Repository repository : rangeResolver.repositories()) {
+        for (Repository repository : rangeResolver.repositories().values()) {
           String comments = repository.comments();
           printComments(pw, comments);
-          pw.printf("repository %s;\n", repository.url());
+          pw.printf("repository %s", repository.url());
+          if (!repository.grouping().equals("default")) {
+            pw.printf(" as %s", repository.grouping());
+          }
+          pw.printf(";\n");
         }
       }
 
@@ -50,11 +54,16 @@ public class RepositoryWriter {
           String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
 
           printComments(pw, resolve.comments());
-          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
-            pw.printf("resolve %s %s filtering /%s/;\n", boundSpec, gav, resolve.filtering().get());
-          } else {
-            pw.printf("resolve %s %s;\n", boundSpec, gav);
+          pw.printf("resolve %s %s", boundSpec, gav);
+
+          if (!resolve.resolutionGrouping().equals("default")) {
+            pw.printf(" against %s", resolve.resolutionGrouping());
           }
+
+          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
+            pw.printf(" filtering /%s/", resolve.filtering().get());
+          }
+          pw.printf(";\n");
         }
       }
 

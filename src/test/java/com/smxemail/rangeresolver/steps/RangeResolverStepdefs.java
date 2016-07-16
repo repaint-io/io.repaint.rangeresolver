@@ -91,10 +91,10 @@ public class RangeResolverStepdefs {
     rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
   }
 
-  @Then("^the repository \"([^\"]*)\" should be declared$")
-  public void theRepositoryShouldBeDeclared(String repository) {
-    for (Repository rep : rangeResolver.repositories()) {
-      if (rep.url().equals(repository)) {
+  @Then("^the repository \"([^\"]*)\" should be declared with a grouping of \"([^\"]*)\"$")
+  public void theRepositoryShouldBeDeclared(String repository, String grouping) {
+    for (Repository rep : rangeResolver.repositories().values()) {
+      if (rep.url().equals(repository) && rep.grouping().equals(grouping)) {
         return;
       }
     }
