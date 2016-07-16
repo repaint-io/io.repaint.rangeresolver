@@ -111,7 +111,7 @@ Feature: Range Resolver
       import com.talios:bill-of-materials:1.0.2;
       import unlocked com.talios.test:bill-of-materials:1.0.2;
       // comment
-      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:1.0.2;
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
@@ -134,7 +134,7 @@ Feature: Range Resolver
       import unlocked com.talios.test:bill-of-materials:1.0.2;
 
       // comment
-      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:[1.0.2];
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
