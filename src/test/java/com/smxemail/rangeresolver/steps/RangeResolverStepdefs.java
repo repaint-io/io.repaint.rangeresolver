@@ -15,6 +15,7 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,14 +86,15 @@ public class RangeResolverStepdefs {
 
   @Then("^it should match the follow script:$")
   public void itShouldMatchTheFollowScript(String script) throws IOException {
-    assertWithMessage("Expected DSL does not match").that(rangeResolverSource.trim()).isEqualTo(script.trim());
+    String delta = deltaDiff(rangeResolverSource.trim(), script.trim());
+    assertWithMessage("Expected DSL does not match: " + delta).that(rangeResolverSource.trim()).isEqualTo(script.trim());
     rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
   }
 
-  @Then("^the repository \"([^\"]*)\" should be declared$")
-  public void theRepositoryShouldBeDeclared(String repository) {
-    for (Repository rep : rangeResolver.repositories()) {
-      if (rep.url().equals(repository)) {
+  @Then("^the repository \"([^\"]*)\" should be declared with a grouping of \"([^\"]*)\"$")
+  public void theRepositoryShouldBeDeclared(String repository, String grouping) {
+    for (Repository rep : rangeResolver.repositories().values()) {
+      if (rep.url().equals(repository) && rep.grouping().equals(grouping)) {
         return;
       }
     }
@@ -217,5 +219,10 @@ public class RangeResolverStepdefs {
     }
 
     throw new IllegalStateException(String.format("No imported artifact for %s found.", artifact));
+  }
+
+  private String deltaDiff(String actual, String expected) {
+    DiffMatchPatch diffMatchPatch = new DiffMatchPatch();
+    return diffMatchPatch.patchToText(diffMatchPatch.patchMake(actual, expected));
   }
 }

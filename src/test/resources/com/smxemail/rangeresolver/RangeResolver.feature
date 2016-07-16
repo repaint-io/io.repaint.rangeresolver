@@ -5,10 +5,10 @@ Feature: Range Resolver
       """
       // Declare repository locations, independent of build tool.
       repository http://SERVER_HERE/nexus/content/repositories/releases;
-      repository http://SERVER_THERE/nexus/content/repositories/snapshots;
+      repository http://SERVER_THERE/nexus/content/repositories/snapshots as snapshots;
       """
-    Then the repository "http://SERVER_HERE/nexus/content/repositories/releases" should be declared
-    And the repository "http://SERVER_THERE/nexus/content/repositories/snapshots" should be declared
+    Then the repository "http://SERVER_HERE/nexus/content/repositories/releases" should be declared with a grouping of "default"
+    And the repository "http://SERVER_THERE/nexus/content/repositories/snapshots" should be declared with a grouping of "snapshots"
 
   Scenario: Parse import declaration
     Given the following script:
@@ -46,16 +46,7 @@ Feature: Range Resolver
     And the dependency "com.smxemail:com.smxemail.api" should use the property "test.prop"
     And the dependency "com.smxemail:com.smxemail.impl" should use the property "com.smxemail.impl.version"
     And the dependency "com.smxemail:com.smxemail.impl" should use the classifer ""
-    And the dependency "com.smxemail:com.smxemail.impl" should use the extension "jar"
-
-  Scenario: Parse resolution request with classifer/extension
-    Given the following script:
-      """
-      resolve highest com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.23,4.0.0):tile:xml;
-      """
-    Then the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should be resolving against the "highest" range "[3.0.23,4.0.0)"
-    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the classifer "tile"
-    And the dependency "com.smxemail.tiles:com.smxemail.tiles.enforcements" should use the extension "xml"
+    And the dependency "com.smxemail:com.smxemail.impl" should use the extension "pom"
 
   Scenario: Parse resolved artifact
     Given the following script:
@@ -114,12 +105,14 @@ Feature: Range Resolver
     Given the following script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
+      repository http://nexus.smxemail.com/nexus/group/public;
       // comment
       import com.talios:bill-of-materials:1.0.2;
       import unlocked com.talios.test:bill-of-materials:1.0.2;
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve highest com.talios.test:bill-of-materials:1.0.2;
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       // comment
@@ -133,7 +126,8 @@ Feature: Range Resolver
     Then it should match the follow script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
+      repository http://nexus.smxemail.com/nexus/group/public;
 
       // comment
       import com.talios:bill-of-materials:1.0.2;
@@ -141,6 +135,7 @@ Feature: Range Resolver
 
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
+      resolve highest com.talios.test:bill-of-materials:[1.0.2];
       resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
 

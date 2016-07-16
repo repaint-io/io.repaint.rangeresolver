@@ -1,5 +1,7 @@
 package com.smxemail.rangeresolver.lang;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
 import com.smxemail.rangeresolver.api.Alias;
@@ -44,6 +46,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
+    Multimap<String, Repository> repositoryMap = Multimaps.index(repositories, Repository::grouping);
+
     if (hasDuplicates(imports)) {
       throw new IllegalStateException("Duplicate import declaration found in " + sourceReference);
     }
@@ -63,7 +67,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolved> resolveds = mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
     List<Resolved> locked = mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
 
-    return RangeResolver.of(repositories, imports, resolves, aliases, resolveds, locked);
+    return RangeResolver.of(repositoryMap, imports, resolves, aliases, resolveds, locked);
   }
 
   private boolean hasDuplicates(List<?> list) {
@@ -71,7 +75,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
-    return Repository.of(comments(rep.comment()), rep.href().getText());
+
+    String grouping = "default";
+    if (rep.respositoryGrouping() != null) {
+      grouping = rep.respositoryGrouping().value().getText();
+    }
+
+    return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
   }
 
   private Resolved resolveLocked(Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
@@ -123,23 +133,20 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       filteringRegex = Optional.of(Pattern.compile(""));
     }
 
-    String extension = "jar";
-    String classifier = "";
-    if (res.rangedArtifact().artifactSpecifier() != null) {
-      RangeResolverParser.ArtifactSpecifierContext artifactSpecifier = res.rangedArtifact().artifactSpecifier();
-      extension = artifactSpecifier.extension().getText();
-      classifier = artifactSpecifier.classifier().getText();
+    String grouping = "default";
+    if (res.resolutionGrouping() != null) {
+      grouping = res.resolutionGrouping().value().getText();
     }
 
     return Resolve.of(
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
-        classifier,
-        extension,
+        "", "pom",
         Bound.valueOf(res.bounds().getText().toUpperCase()),
         range(res.rangedArtifact().range()),
-        filteringRegex);
+        filteringRegex,
+        sourceReference, grouping);
   }
 
   private Pattern compileRegexLiteral(String regex) {
@@ -153,6 +160,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   private Range range(RangeResolverParser.RangeContext context) {
     if (context.fixedRange() != null) {
       return Range.fixed(context.fixedRange().value().getText());
+    } else if (context.implicitRange() != null) {
+      return Range.fixed(context.implicitRange().getText());
     } else {
       return Range.of(
           context.boundedRange().lowerBound().getText(),

@@ -1,6 +1,5 @@
 package com.smxemail.rangeresolver.lang;
 
-import com.google.common.base.Strings;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
@@ -12,6 +11,8 @@ import com.smxemail.rangeresolver.api.Resolved;
 import java.io.PrintWriter;
 import java.io.Writer;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 public class RepositoryWriter {
 
   public static void writeRangeResolveSource(RangeResolver rangeResolver, Writer writer) {
@@ -19,10 +20,14 @@ public class RepositoryWriter {
     try (PrintWriter pw = new PrintWriter(writer)) {
 
       if (!rangeResolver.repositories().isEmpty()) {
-        for (Repository repository : rangeResolver.repositories()) {
+        for (Repository repository : rangeResolver.repositories().values()) {
           String comments = repository.comments();
           printComments(pw, comments);
-          pw.printf("repository %s;\n", repository.url());
+          pw.printf("repository %s", repository.url());
+          if (!repository.grouping().equals("default")) {
+            pw.printf(" as %s", repository.grouping());
+          }
+          pw.printf(";\n");
         }
       }
 
@@ -46,13 +51,19 @@ public class RepositoryWriter {
 
           String boundSpec = resolve.bounds().toString().toLowerCase();
           String versionRange = resolve.range().asVersionRange();
+          String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
 
           printComments(pw, resolve.comments());
-          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
-            pw.printf("resolve %s %s:%s:%s filtering /%s/;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange, resolve.filtering().get());
-          } else {
-            pw.printf("resolve %s %s:%s:%s;\n", boundSpec, resolve.group(), resolve.artifact(), versionRange);
+          pw.printf("resolve %s %s", boundSpec, gav);
+
+          if (!resolve.resolutionGrouping().equals("default")) {
+            pw.printf(" against %s", resolve.resolutionGrouping());
           }
+
+          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
+            pw.printf(" filtering /%s/", resolve.filtering().get());
+          }
+          pw.printf(";\n");
         }
       }
 
@@ -86,7 +97,7 @@ public class RepositoryWriter {
   }
 
   private static void printComments(PrintWriter pw, String comments) {
-    if (!Strings.isNullOrEmpty(comments)) {
+    if (!isNullOrEmpty(comments)) {
       pw.println(comments);
     }
   }

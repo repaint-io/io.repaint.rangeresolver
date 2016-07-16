@@ -8,21 +8,22 @@ grammar RangeResolver;
 
 resolver: ( repository | imported | resolve | alias | resolved | locked )* EOF;
 
-repository: comment*  REPOSITORY href SEMI;
+repository: comment*  REPOSITORY href respositoryGrouping? SEMI;
 imported: comment* IMPORT unlocked? resolvedArtifact SEMI;
-resolve: comment* RESOLVE bounds rangedArtifact filtering? SEMI;
+resolve: comment* RESOLVE bounds rangedArtifact resolutionGrouping? filtering? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
 locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
 
 comment: COMMENT;
+respositoryGrouping: AS value;
+resolutionGrouping: AGAINST value;
 aliasValue: AS value;
 href: URL;
 bounds: BOUNDS;
 unlocked: UNLOCKED;
 artifact: group COLON artifactId;
-rangedArtifact: group COLON artifactId COLON range artifactSpecifier?;
-artifactSpecifier: COLON classifier COLON extension;
+rangedArtifact: group COLON artifactId COLON range;
 classifier: VALUE;
 extension: VALUE;
 resolvedArtifact: group COLON artifactId COLON version;
@@ -32,9 +33,10 @@ filter: REGEX_VALUE;
 group: VALUE;
 artifactId: VALUE;
 version: VALUE;
-range: fixedRange | boundedRange;
+range: fixedRange | boundedRange | implicitRange;
 fixedRange: lowerBound value upperBound;
 boundedRange: lowerBound lowerBoundValue COMMA upperBoundValue upperBound;
+implicitRange: value;
 lowerBound: LOWER_BOUND;
 upperBound: UPPER_BOUND;
 lowerBoundValue: VALUE;
@@ -56,10 +58,8 @@ LOWEST: 'lowest';
 HIGHEST: 'highest';
 SNAPSHOT: 'snapshot';
 FROM: 'from';
-ON: 'on';
 
-
-URL: PROTOCOL COLON  ( VALUECHAR | PERIOD | SPACE )+;
+URL: PROTOCOL COLON  ( VALUECHAR | PERIOD )+;
 PROTOCOL: ('http' | 'https');
 VALUE: (VALUECHAR | PERIOD)+;
 REGEX_VALUE: '/' (LOWER_BOUND | UPPER_BOUND | REGEXCHAR | VALUECHAR | PERIOD )+ '/';

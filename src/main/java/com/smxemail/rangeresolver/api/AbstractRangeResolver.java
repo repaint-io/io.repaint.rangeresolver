@@ -1,5 +1,6 @@
 package com.smxemail.rangeresolver.api;
 
+import com.google.common.collect.Multimap;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.List;
 public abstract class AbstractRangeResolver {
 
   @Value.Parameter
-  public abstract List<Repository> repositories();
+  public abstract Multimap<String, Repository> repositories();
 
   @Value.Parameter
   public abstract List<Import> imports();

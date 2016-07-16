@@ -10,4 +10,7 @@ public abstract class AbstractRepository {
 
   @Value.Parameter
   public abstract String url();
+
+  @Value.Parameter
+  public abstract String grouping();
 }
