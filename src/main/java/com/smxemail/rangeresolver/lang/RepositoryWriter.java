@@ -57,7 +57,7 @@ public class RepositoryWriter {
           pw.printf("resolve %s %s", boundSpec, gav);
 
           if (!resolve.resolutionGrouping().equals("default")) {
-            pw.printf(" against %s", resolve.resolutionGrouping());
+            pw.printf(" via %s", resolve.resolutionGrouping());
           }
 
           if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {

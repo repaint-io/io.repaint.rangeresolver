@@ -17,7 +17,7 @@ locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
 
 comment: COMMENT;
 respositoryGrouping: AS value;
-resolutionGrouping: AGAINST value;
+resolutionGrouping: VIA value;
 aliasValue: AS value;
 href: URL;
 bounds: BOUNDS;
@@ -51,7 +51,7 @@ FILTERING: 'filtering';
 RESOLVED: 'resolved';
 LOCKED: 'locked';
 UNLOCKED: 'unlocked';
-AGAINST: 'against';
+VIA: 'via';
 AS: 'as';
 BOUNDS: ( LOWEST | HIGHEST | SNAPSHOT );
 LOWEST: 'lowest';
