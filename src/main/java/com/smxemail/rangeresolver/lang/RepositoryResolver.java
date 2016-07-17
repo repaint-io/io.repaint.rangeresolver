@@ -176,6 +176,7 @@ public class RepositoryResolver {
             .collect(
                 () -> {
                   Map<String, Resolved> resolution = new TreeMap<>(Comparator.naturalOrder());
+                  resolution.putAll(locallyResolvedThings);
                   resolution.putAll(originallyLockedThings);
                   resolution.putAll(originallyResolvedThings);
                   return resolution;
