@@ -71,7 +71,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private boolean hasDuplicates(List<?> list) {
-    return list.size() != new HashSet(list).size();
+    return list.size() != new HashSet<>(list).size();
   }
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
@@ -142,11 +142,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         comments(res.comment()),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
-        "", "pom",
+        "",
+        "pom",
         Bound.valueOf(res.bounds().getText().toUpperCase()),
         range(res.rangedArtifact().range()),
         filteringRegex,
-        sourceReference, grouping);
+        sourceReference,
+        grouping);
   }
 
   private Pattern compileRegexLiteral(String regex) {

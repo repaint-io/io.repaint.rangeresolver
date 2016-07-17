@@ -60,6 +60,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Strings.emptyToNull;
+
 public class RepositoryResolver {
 
   public static final String BILL_OF_MATERIALS = "bill-of-materials";
@@ -129,8 +131,7 @@ public class RepositoryResolver {
 
     // TODO Should import against a specified repository - rather than all?
     Collection<Repository> repositoryImmutableCollection = rangeResolver.repositories().values();
-    List<RemoteRepository> repositories =
-        buildeRemoteRepositories(repositoryImmutableCollection);
+    List<RemoteRepository> repositories = buildeRemoteRepositories(repositoryImmutableCollection);
 
     repositorySystem.newResolutionRepositories(session, repositories);
 
@@ -151,7 +152,7 @@ public class RepositoryResolver {
     Map<String, Resolve> toResolve = Resolve.mapByKey(resolvedImportedThings.resolves());
     toResolve.putAll(Resolve.mapByKey(rangeResolver.resolves()));
 
-    List<MetadataRequest> metadataRequests = toResolve.values().stream().map(rep -> buildMetaDataRequest(rep)).collect(Collectors.toList());
+    List<MetadataRequest> metadataRequests = toResolve.values().stream().map(this::buildMetaDataRequest).collect(Collectors.toList());
 
     infoLogger.accept("Resolving metadata for " + sourceReference);
     repositorySystem.resolveMetadata(session, metadataRequests);
@@ -163,26 +164,30 @@ public class RepositoryResolver {
             .values()
             .stream()
             .filter(resolve -> !isLocked(sourceReference, originallyLockedThings, resolve))
-            .flatMap(resolve -> optionalStream(resolveArtifact(sourceReference, session,
-                                                               buildeRemoteRepositories(rangeResolver.repositories().get(resolve.resolutionGrouping())),
-                                                               originallyResolvedThings,
-                                                               resolve)))
+            .flatMap(
+                resolve ->
+                    optionalStream(
+                        resolveArtifact(
+                            sourceReference,
+                            session,
+                            buildeRemoteRepositories(rangeResolver.repositories().get(resolve.resolutionGrouping())),
+                            originallyResolvedThings,
+                            resolve)))
             .collect(
                 () -> {
-                  Map<String, Resolved> allResolved = new TreeMap<>(Comparator.naturalOrder());
-                  allResolved.putAll(originallyResolvedThings);
-                  allResolved.putAll(originallyLockedThings);
-                  return allResolved;
+                  Map<String, Resolved> resolution = new TreeMap<>(Comparator.naturalOrder());
+                  resolution.putAll(originallyLockedThings);
+                  resolution.putAll(originallyResolvedThings);
+                  return resolution;
                 },
                 (resolution, resolved) -> {
                   Resolved existingResolved = resolution.get(resolved.key());
-                  Resolved locallyResolved = locallyResolvedThings.get(resolved.key());
-                  if (existingResolved == null || !existingResolved.version().equals(resolved.version())) {
-                    if (locallyResolved == null || !locallyResolved.version().equals(resolved.version())) {
-                      resolution.put(resolved.key(), resolved);
-                    } else {
-                      resolution.put(locallyResolved.key(), locallyResolved);
-                    }
+                  if (existingResolved == null) {
+                    resolution.put(resolved.key(), resolved);
+                  } else if (existingResolved.version().equals(resolved.version())) {
+                    resolution.put(existingResolved.key(), existingResolved);
+                  } else {
+                    resolution.put(resolved.key(), resolved);
                   }
                 },
                 Map::putAll);
@@ -291,13 +296,19 @@ public class RepositoryResolver {
       Optional<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
 
       if (!resolvedVersionRange.isPresent()) {
+        String repositorySource = repositories.stream().map(RemoteRepository::toString).collect(Collectors.joining("|", "[", "]"));
+
+        String baseError =
+            String.format(
+                "Unable to resolve %s releases in the range %s from %s, declared in %s",
+                resolve.key(), resolve.range().asVersionRange(), repositorySource, sourceReference);
         if (originalResolution != null) {
-          warningLogger.accept(
-              String.format("Unable to resolve any releases for %s, using existing resolution of %s.", resolve.key(), originalResolution.version()));
+          warningLogger.accept(baseError + String.format(": using existing resolution of %s.", originalResolution.version()));
           return Optional.of(originalResolution);
         } else {
-          throw missingReleases(resolve, sourceReference);
+          throw new IllegalStateException(baseError);
         }
+
       } else {
         Range constrainedRange = resolvedVersionRange.get();
         String boundVersion = resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
@@ -367,13 +378,8 @@ public class RepositoryResolver {
     return v -> !resolve.filtering().orElse(FILTER_SNAPSHOTS).matcher(v.toString()).matches();
   }
 
-  private IllegalStateException missingReleases(Resolve resolve, String sourceReference) {
-    return new IllegalStateException(
-        String.format("Unable to resolve any releases of %s in range of %s from %s", resolve.artifact(), resolve.range().asVersionRange(), sourceReference));
-  }
-
   private DefaultArtifact resolveToArtifact(Resolve resolve) {
-    return new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), resolve.range().asVersionRange());
+    return new DefaultArtifact(resolve.group(), resolve.artifact(), emptyToNull(resolve.classifier()), resolve.extension(), resolve.range().asVersionRange());
   }
 
   private boolean isLocked(String sourceReference, Map<String, Resolved> lockedProperties, Resolve resolve) {
