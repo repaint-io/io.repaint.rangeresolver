@@ -307,7 +307,8 @@ public class RepositoryResolver {
           warningLogger.accept(baseError + String.format(": using existing resolution of %s.", originalResolution.version()));
           return Optional.of(originalResolution);
         } else {
-          throw new IllegalStateException(baseError);
+          warningLogger.accept(baseError);
+          return Optional.empty();
         }
 
       } else {
