@@ -1,6 +1,7 @@
 package com.smxemail.rangeresolver.lang;
 
 import com.smxemail.rangeresolver.api.Alias;
+import com.smxemail.rangeresolver.api.Allow;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
@@ -12,6 +13,8 @@ import java.io.PrintWriter;
 import java.io.Writer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
 public class RepositoryWriter {
 
@@ -36,11 +39,16 @@ public class RepositoryWriter {
 
         for (Import imported : rangeResolver.imports()) {
           printComments(pw, imported.comments());
-          if (imported.unlocked()) {
-            pw.printf("import unlocked %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
-          } else {
-            pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
-          }
+          pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+        }
+      }
+
+      if (!rangeResolver.allows().isEmpty()) {
+        pw.println();
+
+        for (Allow allow : rangeResolver.allows()) {
+          printComments(pw, allow.comments());
+          pw.printf("allow %s /%s/;\n", allow.allowable().name().toLowerCase(), allow.pattern());
         }
       }
 
@@ -60,8 +68,8 @@ public class RepositoryWriter {
             pw.printf(" via %s", resolve.resolutionGrouping());
           }
 
-          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering().isPresent()) {
-            pw.printf(" filtering /%s/", resolve.filtering().get());
+          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering() != ALLOW_SNAPSHOTS && resolve.filtering() != FILTER_SNAPSHOTS) {
+            pw.printf(" filtering /%s/", resolve.filtering());
           }
           pw.printf(";\n");
         }

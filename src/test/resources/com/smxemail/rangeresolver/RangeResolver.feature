@@ -109,7 +109,10 @@ Feature: Range Resolver
       repository http://nexus.smxemail.com/nexus/group/public;
       // comment
       import com.talios:bill-of-materials:1.0.2;
-      import unlocked com.talios.test:bill-of-materials:1.0.2;
+      import com.talios.test:bill-of-materials:1.0.2;
+      // comment
+      allow unlocked /^com.talios.*$/;
+      allow snapshots /^com.talios.*$/;
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:1.0.2;
@@ -131,7 +134,11 @@ Feature: Range Resolver
 
       // comment
       import com.talios:bill-of-materials:1.0.2;
-      import unlocked com.talios.test:bill-of-materials:1.0.2;
+      import com.talios.test:bill-of-materials:1.0.2;
+
+      // comment
+      allow unlocked /^com.talios.*$/;
+      allow snapshots /^com.talios.*$/;
 
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
@@ -147,4 +154,32 @@ Feature: Range Resolver
 
       // comment
       locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+
+  Scenario: Importing DSL as unlocked
+    Given the following script:
+      """
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+    When importing as unlocked
+    And when writing the DSL back out
+    Then it should match the follow script:
+      """
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+
+  Scenario: Importing DSL as snapshots
+    Given the following script:
+      """
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0);
+      resolve lowest com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
+      """
+    When importing as snapshots
+    And when writing the DSL back out
+    Then it should match the follow script:
+      """
+      resolve snapshot com.smxemail:com.smxemail.api:[1.0.0,2.0.0);
+      resolve snapshot com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
       """

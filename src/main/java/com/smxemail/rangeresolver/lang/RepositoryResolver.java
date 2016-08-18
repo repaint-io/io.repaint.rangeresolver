@@ -61,14 +61,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Strings.emptyToNull;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
 public class RepositoryResolver {
 
   public static final String BILL_OF_MATERIALS = "bill-of-materials";
 
   public static final String DEPS = "deps";
-
-  public static final Pattern FILTER_SNAPSHOTS = Pattern.compile("^.*-SNAPSHOT$");
 
   private Consumer<String> infoLogger;
   private Consumer<String> warningLogger;
@@ -245,9 +245,11 @@ public class RepositoryResolver {
   public RangeResolver resolveImport(String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i)
       throws ArtifactResolutionException, IOException {
 
-    Bound importBound = i.version().endsWith("-SNAPSHOT") ? Bound.SNAPSHOT : Bound.HIGHEST;
+    boolean requestSnapshots = i.version().endsWith("-SNAPSHOT");
+    Bound importBound = requestSnapshots ? Bound.SNAPSHOT : Bound.HIGHEST;
+    Pattern importFilter = requestSnapshots ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
     Resolve imported =
-        Resolve.of("", i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, importBound, Range.fixed(i.version()), Optional.empty(), sourceReference, "imported");
+        Resolve.of("", i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, importBound, Range.fixed(i.version()), importFilter, sourceReference, "imported");
 
     // TODO Make resolveArtifact accept both Resolve and Imported
     try {
@@ -268,20 +270,50 @@ public class RepositoryResolver {
 
     RangeResolver importedRangeResolver = RangeResolverProcessor.parseRangeResolver(i.gav(), new FileReader(artifactFile));
 
-    if (i.unlocked()) {
-      importedRangeResolver = unlockDependencies(importedRangeResolver);
-    }
+    importedRangeResolver = snapshotDependencies(importedRangeResolver, warningLogger, i.snapshots());
+    importedRangeResolver = unlockDependencies(importedRangeResolver, i.unlocked());
 
     return importedRangeResolver;
   }
 
-  public static RangeResolver unlockDependencies(RangeResolver importedRangeResolver) {
+  public static RangeResolver unlockDependencies(RangeResolver importedRangeResolver, List<Pattern> unlocked) {
+    Predicate<Resolved> isMatchingUnlocked = resolved -> matchesAny(unlocked).test(resolved.key());
     List<Resolved> allResolved = new ArrayList<>();
-    allResolved.addAll(importedRangeResolver.locked());
+
+    allResolved.addAll(importedRangeResolver.locked().stream().filter(isMatchingUnlocked).collect(Collectors.toList()));
+
+    List<Resolved> locked = importedRangeResolver.locked().stream().filter(isMatchingUnlocked.negate()).collect(Collectors.toList());
+
     allResolved.addAll(importedRangeResolver.resolved());
 
-    importedRangeResolver = importedRangeResolver.withResolved(allResolved).withLocked();
+    importedRangeResolver = importedRangeResolver.withResolved(allResolved).withLocked(locked);
     return importedRangeResolver;
+  }
+
+  public static RangeResolver snapshotDependencies(RangeResolver importedRangeResolver, Consumer<String> warningLogger, List<Pattern> snapshots) {
+    Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
+
+    List<Resolve> snapshotResolves =
+        importedRangeResolver
+            .resolves()
+            .stream()
+            .map(
+                r -> {
+                  if (isMatchingSnapshot.test(r)) {
+                    warningLogger.accept("Allowing SNAPSHOT resolution of " + r.key());
+                    return r.withBounds(Bound.SNAPSHOT).withFiltering(ALLOW_SNAPSHOTS);
+                  } else {
+                    return r;
+                  }
+                })
+            .collect(Collectors.toList());
+
+    importedRangeResolver = importedRangeResolver.withResolves(snapshotResolves);
+    return importedRangeResolver;
+  }
+
+  private static Predicate<String> matchesAny(List<Pattern> patterns) {
+    return value -> patterns.stream().anyMatch(pattern -> pattern.matcher(value).matches());
   }
 
   private Optional<Resolved> resolveArtifact(
@@ -302,7 +334,10 @@ public class RepositoryResolver {
         String baseError =
             String.format(
                 "Unable to resolve %s releases in the range %s from %s, declared in %s",
-                resolve.key(), resolve.range().asVersionRange(), repositorySource, sourceReference);
+                resolve.key(),
+                resolve.range().asVersionRange(),
+                repositorySource,
+                sourceReference);
         if (originalResolution != null) {
           warningLogger.accept(baseError + String.format(": using existing resolution of %s.", originalResolution.version()));
           return Optional.of(originalResolution);
@@ -377,7 +412,7 @@ public class RepositoryResolver {
   }
 
   private Predicate<Version> filterVersion(Resolve resolve) {
-    return v -> !resolve.filtering().orElse(FILTER_SNAPSHOTS).matcher(v.toString()).matches();
+    return v -> !resolve.filtering().matcher(v.toString()).matches();
   }
 
   private DefaultArtifact resolveToArtifact(Resolve resolve) {

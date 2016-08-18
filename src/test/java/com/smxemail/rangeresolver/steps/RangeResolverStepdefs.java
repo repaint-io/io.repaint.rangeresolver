@@ -1,5 +1,6 @@
 package com.smxemail.rangeresolver.steps;
 
+import com.google.common.collect.ImmutableList;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
@@ -23,8 +24,11 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
+import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
 
 public class RangeResolverStepdefs {
 
@@ -73,6 +77,7 @@ public class RangeResolverStepdefs {
     try {
       rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
     } catch (Exception e) {
+      e.printStackTrace();
       rangeResolverException = e;
     }
   }
@@ -224,5 +229,15 @@ public class RangeResolverStepdefs {
   private String deltaDiff(String actual, String expected) {
     DiffMatchPatch diffMatchPatch = new DiffMatchPatch();
     return diffMatchPatch.patchToText(diffMatchPatch.patchMake(actual, expected));
+  }
+
+  @When("^importing as unlocked$")
+  public void importingAsUnlocked() {
+    rangeResolver = unlockDependencies(rangeResolver, ImmutableList.of(Pattern.compile(".*")));
+  }
+
+  @When("^importing as snapshots$")
+  public void importingAsSnapshots() {
+    rangeResolver = snapshotDependencies(rangeResolver, this::warn, ImmutableList.of(Pattern.compile(".*")));
   }
 }

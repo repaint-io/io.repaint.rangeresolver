@@ -4,7 +4,6 @@ import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
@@ -37,7 +36,7 @@ public abstract class AbstractResolve implements PropertyBased {
   public abstract Range range();
 
   @Value.Parameter
-  public abstract Optional<Pattern> filtering();
+  public abstract Pattern filtering();
 
   @Value.Parameter
   public abstract String sourceReference();

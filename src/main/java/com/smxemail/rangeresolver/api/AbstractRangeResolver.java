@@ -15,6 +15,9 @@ public abstract class AbstractRangeResolver {
   public abstract List<Import> imports();
 
   @Value.Parameter
+  public abstract List<Allow> allows();
+
+  @Value.Parameter
   public abstract List<Resolve> resolves();
 
   @Value.Parameter
