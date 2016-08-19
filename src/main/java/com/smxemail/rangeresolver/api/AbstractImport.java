@@ -2,6 +2,9 @@ package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;
 
+import java.util.List;
+import java.util.regex.Pattern;
+
 @Value.Immutable
 public abstract class AbstractImport {
 
@@ -18,7 +21,10 @@ public abstract class AbstractImport {
   public abstract String version();
 
   @Value.Parameter
-  public abstract boolean unlocked();
+  public abstract List<Pattern> snapshots();
+
+  @Value.Parameter
+  public abstract List<Pattern> unlocked();
 
   @Value.Derived
   public String key() {

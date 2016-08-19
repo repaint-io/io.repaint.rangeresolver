@@ -5,6 +5,8 @@ import com.google.common.collect.Multimaps;
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
 import com.smxemail.rangeresolver.api.Alias;
+import com.smxemail.rangeresolver.api.Allow;
+import com.smxemail.rangeresolver.api.Allowable;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.PropertyBased;
@@ -18,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
@@ -27,6 +28,10 @@ import java.util.stream.Collectors;
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
 
   public static final String ARTIFACT_VERSION = "%s.version";
+
+  public static final Pattern ALLOW_SNAPSHOTS = Pattern.compile("");
+
+  public static final Pattern FILTER_SNAPSHOTS = Pattern.compile("^.*-SNAPSHOT$");
 
   private final String sourceReference;
 
@@ -41,8 +46,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   @Override
   public RangeResolver visitResolver(RangeResolverParser.ResolverContext ctx) {
 
+    List<Allow> allowables = mapList(ctx.allow(), this::resolveAllow);
+
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
-    List<Import> imports = mapList(ctx.imported(), this::resolveImport);
+    List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
@@ -67,7 +74,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolved> resolveds = mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
     List<Resolved> locked = mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
 
-    return RangeResolver.of(repositoryMap, imports, resolves, aliases, resolveds, locked);
+    return RangeResolver.of(repositoryMap, imports, allowables, resolves, aliases, resolveds, locked);
+  }
+
+  private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
+    Pattern pattern = compileRegexLiteral(rep.REGEX_VALUE().getText());
+    Allowable allowable = Allowable.valueOf(rep.ALLOWABLE().getText().toUpperCase());
+    return Allow.of(comments(rep.comment()), allowable, pattern);
   }
 
   private boolean hasDuplicates(List<?> list) {
@@ -114,23 +127,30 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         Range.fixed(version));
   }
 
-  private Import resolveImport(RangeResolverParser.ImportedContext res) {
-    return Import.of(
-        comments(res.comment()),
-        res.resolvedArtifact().group().getText(),
-        res.resolvedArtifact().artifactId().getText(),
-        res.resolvedArtifact().version().getText(),
-        res.unlocked() != null);
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(List<Allow> allows) {
+    List<Pattern> unlocked = allows.stream().filter(allow -> allow.allowable() == Allowable.UNLOCKED).map(Allow::pattern).collect(Collectors.toList());
+
+    List<Pattern> snapshots = allows.stream().filter(allow -> allow.allowable() == Allowable.SNAPSHOTS).map(Allow::pattern).collect(Collectors.toList());
+
+    return importContext ->
+        Import.of(
+            comments(importContext.comment()),
+            importContext.resolvedArtifact().group().getText(),
+            importContext.resolvedArtifact().artifactId().getText(),
+            importContext.resolvedArtifact().version().getText(),
+            snapshots,
+            unlocked);
   }
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext res) {
 
     Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
+    Pattern filteringRegex;
 
-    Optional<Pattern> filteringRegex = res.filtering() == null ? Optional.empty() : Optional.of(compileRegexLiteral(res.filtering().filter().getText()));
-
-    if (bound == Bound.SNAPSHOT) {
-      filteringRegex = Optional.of(Pattern.compile(""));
+    if (res.filtering() == null) {
+      filteringRegex = bound == Bound.SNAPSHOT ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
+    } else {
+      filteringRegex = compileRegexLiteral(res.filtering().filter().getText());
     }
 
     String grouping = "default";

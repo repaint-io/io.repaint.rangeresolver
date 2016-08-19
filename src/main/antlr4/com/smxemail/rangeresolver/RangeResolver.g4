@@ -6,10 +6,11 @@
 
 grammar RangeResolver;
 
-resolver: ( repository | imported | resolve | alias | resolved | locked )* EOF;
+resolver: ( repository | allow | imported | resolve | alias | resolved | locked )* EOF;
 
 repository: comment*  REPOSITORY href respositoryGrouping? SEMI;
-imported: comment* IMPORT unlocked? resolvedArtifact SEMI;
+allow: comment* ALLOW ALLOWABLE REGEX_VALUE SEMI;
+imported: comment* IMPORT resolvedArtifact SEMI;
 resolve: comment* RESOLVE bounds rangedArtifact resolutionGrouping? filtering? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
@@ -21,7 +22,6 @@ resolutionGrouping: VIA value;
 aliasValue: AS value;
 href: URL;
 bounds: BOUNDS;
-unlocked: UNLOCKED;
 artifact: group COLON artifactId;
 rangedArtifact: group COLON artifactId COLON range;
 classifier: VALUE;
@@ -47,6 +47,8 @@ REPOSITORY: 'repository';
 IMPORT: 'import';
 ALIAS: 'alias';
 RESOLVE: 'resolve';
+ALLOW: 'allow';
+ALLOWABLE: ( SNAPSHOTS | UNLOCKED );
 FILTERING: 'filtering';
 RESOLVED: 'resolved';
 LOCKED: 'locked';
@@ -57,6 +59,7 @@ BOUNDS: ( LOWEST | HIGHEST | SNAPSHOT );
 LOWEST: 'lowest';
 HIGHEST: 'highest';
 SNAPSHOT: 'snapshot';
+SNAPSHOTS: 'snapshots';
 FROM: 'from';
 
 URL: PROTOCOL COLON  ( VALUECHAR | PERIOD )+;
