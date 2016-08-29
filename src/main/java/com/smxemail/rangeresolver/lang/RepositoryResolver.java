@@ -12,6 +12,7 @@ import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
+import one.util.streamex.StreamEx;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -63,6 +64,7 @@ import java.util.stream.Stream;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
+import static java.util.stream.Collectors.toList;
 
 public class RepositoryResolver {
 
@@ -152,7 +154,7 @@ public class RepositoryResolver {
     Map<String, Resolve> toResolve = Resolve.mapByKey(resolvedImportedThings.resolves());
     toResolve.putAll(Resolve.mapByKey(rangeResolver.resolves()));
 
-    List<MetadataRequest> metadataRequests = toResolve.values().stream().map(this::buildMetaDataRequest).collect(Collectors.toList());
+    List<MetadataRequest> metadataRequests = toResolve.values().stream().map(this::buildMetaDataRequest).collect(toList());
 
     infoLogger.accept("Resolving metadata for " + sourceReference);
     repositorySystem.resolveMetadata(session, metadataRequests);
@@ -201,7 +203,7 @@ public class RepositoryResolver {
   }
 
   private List<RemoteRepository> buildeRemoteRepositories(Collection<Repository> repositoryImmutableCollection) {
-    return repositoryImmutableCollection.stream().map(repo -> buildRepository(repo, updateSnapshots)).collect(Collectors.toList());
+    return repositoryImmutableCollection.stream().map(repo -> buildRepository(repo, updateSnapshots)).collect(toList());
   }
 
   private <T> Stream<T> optionalStream(Optional<T> value) {
@@ -280,9 +282,9 @@ public class RepositoryResolver {
     Predicate<Resolved> isMatchingUnlocked = resolved -> matchesAny(unlocked).test(resolved.key());
     List<Resolved> allResolved = new ArrayList<>();
 
-    allResolved.addAll(importedRangeResolver.locked().stream().filter(isMatchingUnlocked).collect(Collectors.toList()));
+    allResolved.addAll(importedRangeResolver.locked().stream().filter(isMatchingUnlocked).collect(toList()));
 
-    List<Resolved> locked = importedRangeResolver.locked().stream().filter(isMatchingUnlocked.negate()).collect(Collectors.toList());
+    List<Resolved> locked = importedRangeResolver.locked().stream().filter(isMatchingUnlocked.negate()).collect(toList());
 
     allResolved.addAll(importedRangeResolver.resolved());
 
@@ -292,11 +294,10 @@ public class RepositoryResolver {
 
   public static RangeResolver snapshotDependencies(RangeResolver importedRangeResolver, Consumer<String> warningLogger, List<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
+    Predicate<Resolved> isNonMatchingResolvedSnapshot = resolve -> !matchesAny(snapshots).test(resolve.key());
 
     List<Resolve> snapshotResolves =
-        importedRangeResolver
-            .resolves()
-            .stream()
+        StreamEx.of(importedRangeResolver.resolves())
             .map(
                 r -> {
                   if (isMatchingSnapshot.test(r)) {
@@ -306,9 +307,11 @@ public class RepositoryResolver {
                     return r;
                   }
                 })
-            .collect(Collectors.toList());
+            .toList();
 
-    importedRangeResolver = importedRangeResolver.withResolves(snapshotResolves);
+    List<Resolved> lockedWithoutSnapshots = StreamEx.of(importedRangeResolver.locked()).filter(isNonMatchingResolvedSnapshot).toList();
+
+    importedRangeResolver = importedRangeResolver.withResolves(snapshotResolves).withLocked(lockedWithoutSnapshots);
     return importedRangeResolver;
   }
 
@@ -378,7 +381,7 @@ public class RepositoryResolver {
     rangeRequest.setRepositories(repositories);
 
     List<Version> resolvedVersions =
-        repositorySystem.resolveVersionRange(session, rangeRequest).getVersions().stream().filter(filterVersion(resolve)).collect(Collectors.toList());
+        StreamEx.of(repositorySystem.resolveVersionRange(session, rangeRequest).getVersions()).filter(filterVersion(resolve)).toList();
 
     if (resolvedVersions.isEmpty()) {
       return Optional.empty();
