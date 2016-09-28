@@ -49,12 +49,11 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -177,7 +176,7 @@ public class RepositoryResolver {
                             resolve)))
             .collect(
                 () -> {
-                  Map<String, Resolved> resolution = new TreeMap<>(Comparator.naturalOrder());
+                  Map<String, Resolved> resolution = new HashMap<>();
                   resolution.putAll(locallyResolvedThings);
                   resolution.putAll(originallyLockedThings);
                   resolution.putAll(originallyResolvedThings);
@@ -195,7 +194,7 @@ public class RepositoryResolver {
                 },
                 Map::putAll);
 
-    List<Resolved> sortedUniqueResolved = ImmutableList.copyOf(resolvedThings.values());
+    List<Resolved> sortedUniqueResolved = StreamEx.of(resolvedThings.values()).sortedBy(Resolved::key).toList();
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
 
