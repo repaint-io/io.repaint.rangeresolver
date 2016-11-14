@@ -194,11 +194,15 @@ public class RepositoryResolver {
                 },
                 Map::putAll);
 
-    List<Resolved> sortedUniqueResolved = StreamEx.of(resolvedThings.values()).sortedBy(Resolved::key).toList();
+    List<Resolved> sortedUniqueResolved = sortResolvedThings(resolvedThings.values());
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
 
     return ResolutionResult.of(resolvedImportedThings.aliases(), rangeResolver.resolves(), sortedUniqueResolved, rangeResolver.locked());
+  }
+
+  public static List<Resolved> sortResolvedThings(Collection<Resolved> values) {
+    return StreamEx.of(values).sortedBy(Resolved::key).toList();
   }
 
   private List<RemoteRepository> buildeRemoteRepositories(Collection<Repository> repositoryImmutableCollection) {
@@ -287,7 +291,7 @@ public class RepositoryResolver {
 
     allResolved.addAll(importedRangeResolver.resolved());
 
-    importedRangeResolver = importedRangeResolver.withResolved(allResolved).withLocked(locked);
+    importedRangeResolver = importedRangeResolver.withResolved(sortResolvedThings(allResolved)).withLocked(locked);
     return importedRangeResolver;
   }
 
