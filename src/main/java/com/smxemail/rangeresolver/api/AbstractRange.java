@@ -30,7 +30,8 @@ public abstract class AbstractRange {
   @Value.Check
   protected void check() {
     if (isNewerVersion(lower(), upper())) {
-      throw new IllegalArgumentException(String.format("Invalid range requested, %s is lower than %s", upper(), lower()));
+      throw new IllegalArgumentException(
+          String.format("Invalid range requested, %s is lower than %s", upper(), lower()));
     }
   }
 

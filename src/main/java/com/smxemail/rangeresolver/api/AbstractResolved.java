@@ -37,7 +37,8 @@ public abstract class AbstractResolved {
     return String.format("%s:%s", group(), artifact());
   }
 
-  public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey = Collectors.toMap(Resolved::key, Function.identity());
+  public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey =
+      Collectors.toMap(Resolved::key, Function.identity());
 
   public static final Map<String, Resolved> mapByKey(List<Resolved> resolveds) {
     return resolveds.stream().collect(collectByKey);

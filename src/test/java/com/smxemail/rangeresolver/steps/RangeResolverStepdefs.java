@@ -59,7 +59,8 @@ public class RangeResolverStepdefs {
   }
 
   private RepositoryResolver repositoryResolver =
-      RepositoryResolver.createRepositoryResolver(this::info, this::warn, resolveLocalRepository().getAbsolutePath(), true);
+      RepositoryResolver.createRepositoryResolver(
+          this::info, this::warn, resolveLocalRepository().getAbsolutePath(), true);
 
   @Before
   public void beforeScenario() {
@@ -75,7 +76,8 @@ public class RangeResolverStepdefs {
   @Given("^the following script:$")
   public void givenTheFollowingScript(String script) throws IOException {
     try {
-      rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
+      rangeResolver =
+          RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
     } catch (Exception e) {
       e.printStackTrace();
       rangeResolverException = e;
@@ -92,8 +94,11 @@ public class RangeResolverStepdefs {
   @Then("^it should match the follow script:$")
   public void itShouldMatchTheFollowScript(String script) throws IOException {
     String delta = deltaDiff(rangeResolverSource.trim(), script.trim());
-    assertWithMessage("Expected DSL does not match: " + delta).that(rangeResolverSource.trim()).isEqualTo(script.trim());
-    rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
+    assertWithMessage("Expected DSL does not match: " + delta)
+        .that(rangeResolverSource.trim())
+        .isEqualTo(script.trim());
+    rangeResolver =
+        RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
   }
 
   @Then("^the repository \"([^\"]*)\" should be declared with a grouping of \"([^\"]*)\"$")
@@ -107,15 +112,20 @@ public class RangeResolverStepdefs {
     throw new IllegalStateException("No repository declared for " + repository);
   }
 
-  @Then("^the dependency \"([^\"]*)\" should be resolving against the \"([^\"]*)\" range \"([^\"]*)\"$")
-  public void theDependencyShouldBeResolvingAgainstTheRange(String artifact, String bounds, String range) {
+  @Then(
+      "^the dependency \"([^\"]*)\" should be resolving against the \"([^\"]*)\" range \"([^\"]*)\"$")
+  public void theDependencyShouldBeResolvingAgainstTheRange(
+      String artifact, String bounds, String range) {
     for (Resolve resolve : rangeResolver.resolves()) {
-      if (artifact.equals(resolve.key()) && resolve.bounds().toString().toLowerCase().equals(bounds) && resolve.range().asVersionRange().equals(range)) {
+      if (artifact.equals(resolve.key())
+          && resolve.bounds().toString().toLowerCase().equals(bounds)
+          && resolve.range().asVersionRange().equals(range)) {
         return;
       }
     }
 
-    throw new IllegalStateException(String.format("No resolution for %s %s with range %s found.", bounds, artifact, range));
+    throw new IllegalStateException(
+        String.format("No resolution for %s %s with range %s found.", bounds, artifact, range));
   }
 
   @Then("^the dependency \"([^\"]*)\" should use the property \"([^\"]*)\"$")
@@ -130,7 +140,8 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolution for %s with alias %s found.", artifact, property));
+    throw new IllegalStateException(
+        String.format("No resolution for %s with alias %s found.", artifact, property));
   }
 
   @And("^the dependency \"([^\"]*)\" should use the classifer \"([^\"]*)\"$")
@@ -140,7 +151,8 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolution for %s with classifier %s found.", artifact, classifier));
+    throw new IllegalStateException(
+        String.format("No resolution for %s with classifier %s found.", artifact, classifier));
   }
 
   @And("^the dependency \"([^\"]*)\" should use the extension \"([^\"]*)\"$")
@@ -150,17 +162,20 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolution for %s with extension %s found.", artifact, extension));
+    throw new IllegalStateException(
+        String.format("No resolution for %s with extension %s found.", artifact, extension));
   }
 
   @Then("^the dependency \"([^\"]*)\" should be resolved from \"([^\"]*)\"$")
   public void theDependencyShouldBeResolvedFromOn(String artifact, String from) {
     for (Resolved resolved : rangeResolver.resolved()) {
-      if (artifact.equals(resolved.key() + ":" + resolved.version()) && resolved.resolvedFrom().equals(from)) {
+      if (artifact.equals(resolved.key() + ":" + resolved.version())
+          && resolved.resolvedFrom().equals(from)) {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolved artifact for %s from %s found.", artifact, from));
+    throw new IllegalStateException(
+        String.format("No resolved artifact for %s from %s found.", artifact, from));
   }
 
   @Given("^that \"([^\"]*)\" was previously imported$")
@@ -171,7 +186,8 @@ public class RangeResolverStepdefs {
   @Then("^resolving with aether$")
   public void resolvingWithAetherShouldSucceed() {
     try {
-      resolutionResult = repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
+      resolutionResult =
+          repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
     } catch (Exception e) {
       rangeResolverException = e;
     }
@@ -203,12 +219,16 @@ public class RangeResolverStepdefs {
 
   @Then("^it should fail with \"([^\"]*)\"$")
   public void itShouldFailWith(String message) {
-    assertWithMessage("The Script should has expected exception message!").that(rangeResolverException.getMessage()).isEqualTo(message);
+    assertWithMessage("The Script should has expected exception message!")
+        .that(rangeResolverException.getMessage())
+        .isEqualTo(message);
   }
 
   @And("^a warning message \"([^\"]*)\" should be logged$")
   public void aWarningMessageShouldBeLogged(String message) {
-    assertWithMessage("The message \"%s\" was not logged.", message).that(warnMessages).contains(message);
+    assertWithMessage("The message \"%s\" was not logged.", message)
+        .that(warnMessages)
+        .contains(message);
   }
 
   @Then("^the resolution of \"([^\"]*)\" should be \"([^\"]*)\"$")
@@ -218,7 +238,10 @@ public class RangeResolverStepdefs {
         if (version.equals(resolved.version())) {
           return;
         } else {
-          throw new IllegalStateException(String.format("Resolution of artifact %s found with unexpected version: %s.", artifact, resolved.version()));
+          throw new IllegalStateException(
+              String.format(
+                  "Resolution of artifact %s found with unexpected version: %s.",
+                  artifact, resolved.version()));
         }
       }
     }
@@ -238,6 +261,7 @@ public class RangeResolverStepdefs {
 
   @When("^importing as snapshots$")
   public void importingAsSnapshots() {
-    rangeResolver = snapshotDependencies(rangeResolver, this::warn, ImmutableList.of(Pattern.compile(".*")));
+    rangeResolver =
+        snapshotDependencies(rangeResolver, this::warn, ImmutableList.of(Pattern.compile(".*")));
   }
 }

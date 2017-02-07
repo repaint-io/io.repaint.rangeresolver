@@ -27,7 +27,8 @@ public abstract class AbstractResolutionResult {
     return ResolutionResult.combine(this, other);
   }
 
-  public static ResolutionResult combine(AbstractResolutionResult left, AbstractResolutionResult right) {
+  public static ResolutionResult combine(
+      AbstractResolutionResult left, AbstractResolutionResult right) {
     return ResolutionResult.of(
         combine(left.aliases(), right.aliases()),
         combine(left.resolves(), right.resolves()),
@@ -40,7 +41,11 @@ public abstract class AbstractResolutionResult {
   }
 
   public static ResolutionResult empty() {
-    return ResolutionResult.of(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    return ResolutionResult.of(
+        Collections.emptyList(),
+        Collections.emptyList(),
+        Collections.emptyList(),
+        Collections.emptyList());
   }
 
   public static final Collector<ResolutionResult, ?, ResolutionResult> REDUCING =
