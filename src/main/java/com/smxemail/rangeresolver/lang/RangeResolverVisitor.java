@@ -53,7 +53,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
-    Multimap<String, Repository> repositoryMap = Multimaps.index(repositories, Repository::grouping);
+    Multimap<String, Repository> repositoryMap =
+        Multimaps.index(repositories, Repository::grouping);
 
     if (hasDuplicates(imports)) {
       throw new IllegalStateException("Duplicate import declaration found in " + sourceReference);
@@ -62,7 +63,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       throw new IllegalStateException("Duplicate alias declaration found in " + sourceReference);
     }
 
-    Collector<PropertyBased, ?, java.util.Map<String, String>> collector = Collectors.toMap(PropertyBased::key, PropertyBased::propertyName);
+    Collector<PropertyBased, ?, java.util.Map<String, String>> collector =
+        Collectors.toMap(PropertyBased::key, PropertyBased::propertyName);
 
     Map<String, String> propertyNames = resolves.stream().collect(collector);
     Map<String, String> aliasNames = aliases.stream().collect(collector);
@@ -71,10 +73,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     effectivePropertyNames.putAll(propertyNames);
     effectivePropertyNames.putAll(aliasNames);
 
-    List<Resolved> resolveds = mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
-    List<Resolved> locked = mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
+    List<Resolved> resolveds =
+        mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
+    List<Resolved> locked =
+        mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
 
-    return RangeResolver.of(repositoryMap, imports, allowables, resolves, aliases, resolveds, locked);
+    return RangeResolver.of(
+        repositoryMap, imports, allowables, resolves, aliases, resolveds, locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -97,7 +102,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
   }
 
-  private Resolved resolveLocked(Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
+  private Resolved resolveLocked(
+      Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
@@ -112,10 +118,15 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         Range.fixed(version));
   }
 
-  private Resolved resolveResolved(Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
+  private Resolved resolveResolved(
+      Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
-    String key = String.format("%s:%s", res.resolvedArtifact().group().getText(), res.resolvedArtifact().artifactId().getText());
+    String key =
+        String.format(
+            "%s:%s",
+            res.resolvedArtifact().group().getText(),
+            res.resolvedArtifact().artifactId().getText());
     String version = res.resolvedArtifact().version().getText();
     return Resolved.of(
         comments(res.comment()),
@@ -128,9 +139,19 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(List<Allow> allows) {
-    List<Pattern> unlocked = allows.stream().filter(allow -> allow.allowable() == Allowable.UNLOCKED).map(Allow::pattern).collect(Collectors.toList());
+    List<Pattern> unlocked =
+        allows
+            .stream()
+            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+            .map(Allow::pattern)
+            .collect(Collectors.toList());
 
-    List<Pattern> snapshots = allows.stream().filter(allow -> allow.allowable() == Allowable.SNAPSHOTS).map(Allow::pattern).collect(Collectors.toList());
+    List<Pattern> snapshots =
+        allows
+            .stream()
+            .filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
+            .map(Allow::pattern)
+            .collect(Collectors.toList());
 
     return importContext ->
         Import.of(
@@ -176,7 +197,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Alias resolveAlias(RangeResolverParser.AliasContext res) {
-    return Alias.of(comments(res.comment()), res.artifact().group().getText(), res.artifact().artifactId().getText(), alias(res.aliasValue()));
+    return Alias.of(
+        comments(res.comment()),
+        res.artifact().group().getText(),
+        res.artifact().artifactId().getText(),
+        alias(res.aliasValue()));
   }
 
   private Range range(RangeResolverParser.RangeContext context) {

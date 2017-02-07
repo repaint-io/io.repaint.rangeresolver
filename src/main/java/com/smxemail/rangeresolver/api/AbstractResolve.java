@@ -54,7 +54,8 @@ public abstract class AbstractResolve implements PropertyBased {
     return String.format(ARTIFACT_VERSION, artifact());
   }
 
-  public static final Collector<Resolve, ?, Map<String, Resolve>> collectByKey = Collectors.toMap(Resolve::key, Function.identity());
+  public static final Collector<Resolve, ?, Map<String, Resolve>> collectByKey =
+      Collectors.toMap(Resolve::key, Function.identity());
 
   public static final Map<String, Resolve> mapByKey(List<Resolve> resolves) {
     return resolves.stream().collect(collectByKey);

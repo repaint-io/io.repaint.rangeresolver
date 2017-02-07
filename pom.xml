@@ -4,7 +4,7 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.0.29-SNAPSHOT</version>
+  <version>1.0.30-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
@@ -36,14 +36,14 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>2.3.10</version>
+      <version>2.4.3</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>one.util</groupId>
       <artifactId>streamex</artifactId>
-      <version>0.6.4</version>
+      <version>0.6.5</version>
     </dependency>
 
     <!-- aether deps -->
@@ -136,6 +136,14 @@
             <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.0.0,3.0.0)</tile>
             <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.0,4.0.0)</tile>
           </tiles>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.6.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>

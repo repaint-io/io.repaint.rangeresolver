@@ -39,7 +39,8 @@ public class RepositoryWriter {
 
         for (Import imported : rangeResolver.imports()) {
           printComments(pw, imported.comments());
-          pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+          pw.printf(
+              "import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
         }
       }
 
@@ -68,7 +69,9 @@ public class RepositoryWriter {
             pw.printf(" via %s", resolve.resolutionGrouping());
           }
 
-          if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering() != ALLOW_SNAPSHOTS && resolve.filtering() != FILTER_SNAPSHOTS) {
+          if (resolve.bounds() != Bound.SNAPSHOT
+              && resolve.filtering() != ALLOW_SNAPSHOTS
+              && resolve.filtering() != FILTER_SNAPSHOTS) {
             pw.printf(" filtering /%s/", resolve.filtering());
           }
           pw.printf(";\n");
@@ -89,7 +92,9 @@ public class RepositoryWriter {
 
         for (Resolved resolved : rangeResolver.resolved()) {
           printComments(pw, resolved.comments());
-          pw.printf("resolved %s:%s:%s from %s;\n", resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
+          pw.printf(
+              "resolved %s:%s:%s from %s;\n",
+              resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
         }
       }
 
@@ -98,7 +103,9 @@ public class RepositoryWriter {
 
         for (Resolved resolved : rangeResolver.locked()) {
           printComments(pw, resolved.comments());
-          pw.printf("locked %s:%s:%s from %s;\n", resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
+          pw.printf(
+              "locked %s:%s:%s from %s;\n",
+              resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
         }
       }
     }

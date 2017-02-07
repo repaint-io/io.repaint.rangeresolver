@@ -13,7 +13,8 @@ import java.io.Reader;
 
 public class RangeResolverProcessor {
 
-  public static RangeResolver parseRangeResolver(String sourceReference, Reader reader) throws IOException {
+  public static RangeResolver parseRangeResolver(String sourceReference, Reader reader)
+      throws IOException {
     CharStream charStream = new ANTLRInputStream(reader);
     RangeResolverLexer lexer = new RangeResolverLexer(charStream);
     TokenStream tokens = new CommonTokenStream(lexer);
