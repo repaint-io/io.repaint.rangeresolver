@@ -163,8 +163,6 @@ public class RepositoryResolver {
         resolvedImported.locked().stream().collect(Resolved.collectByKey);
     originallyLocked.putAll(rangeResolver.locked().stream().collect(Resolved.collectByKey));
 
-    Map<String, Resolved> locallyResolvedThings =
-        rangeResolver.resolved().stream().collect(Resolved.collectByKey);
     Map<String, Resolved> originallyResolvedThings =
         resolvedImported.resolved().stream().collect(Resolved.collectByKey);
 
@@ -198,7 +196,6 @@ public class RepositoryResolver {
             .collect(
                 () -> {
                   Map<String, Resolved> resolution = new HashMap<>();
-                  resolution.putAll(locallyResolvedThings);
                   resolution.putAll(originallyResolvedThings);
                   return resolution;
                 },
