@@ -20,8 +20,6 @@
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <aetherVersion>1.1.0</aetherVersion>
-
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
   </properties>
@@ -45,50 +43,63 @@
       <artifactId>streamex</artifactId>
       <version>0.6.5</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>21.0</version>
+    </dependency>
 
-    <!-- aether deps -->
+    <!-- resolver deps -->
+
+    <dependency>
+       <groupId>org.apache.maven</groupId>
+       <artifactId>maven-artifact</artifactId>
+       <version>3.5.0-alpha-1</version>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.maven</groupId>
-      <artifactId>maven-aether-provider</artifactId>
-      <version>3.3.9</version>
+      <artifactId>maven-resolver-provider</artifactId>
+      <version>3.5.0-alpha-1</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-api</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-spi</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-util</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-impl</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-connector-basic</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-transport-file</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-transport-http</artifactId>
-      <version>${aetherVersion}</version>
-    </dependency>
-    <!-- aether deps -->
 
+    <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-api</artifactId>
+        <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-spi</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-util</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-impl</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-connector-basic</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-transport-file</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.maven.resolver</groupId>
+       <artifactId>maven-resolver-transport-http</artifactId>
+       <version>1.0.3</version>
+    </dependency>
+
+    <!-- resolver deps -->
 
     <dependency>
       <groupId>info.cukes</groupId>
@@ -105,7 +116,13 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.31</version>
+      <version>0.32</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.truth.extensions</groupId>
+      <artifactId>truth-java8-extension</artifactId>
+      <version>0.32</version>
       <scope>test</scope>
     </dependency>
     <dependency>
