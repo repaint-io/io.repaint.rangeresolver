@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
 
   public static final String ARTIFACT_VERSION = "%s.version";
@@ -193,7 +195,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Pattern compileRegexLiteral(String regex) {
-    return Pattern.compile(regex.substring(1, regex.length() - 1));
+    return Pattern.compile(regex.substring(1, regex.length() - 1), CASE_INSENSITIVE);
   }
 
   private Alias resolveAlias(RangeResolverParser.AliasContext res) {
