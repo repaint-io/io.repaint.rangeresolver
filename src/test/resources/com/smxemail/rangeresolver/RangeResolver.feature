@@ -1,7 +1,13 @@
 Feature: Range Resolver
+#  Background:
+#    Given the following base script:
+#      """
+#      // Declare repository locations, independent of build tool.
+#      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+#      """
 
   Scenario: Parse simple repository declaration
-    Given the following script:
+    Given the following raw script:
       """
       // Declare repository locations, independent of build tool.
       repository http://SERVER_HERE/nexus/content/repositories/releases;
@@ -25,14 +31,14 @@ Feature: Range Resolver
       """
     Then it should fail with "Duplicate import declaration found in cucumber"
 
-  Scenario: Parse circular import declarations should fail
-    Given the following script:
-      """
-      import com.talios:bill-of-materials:1.0.2;
-      """
-    And that "com.talios:bill-of-materials:1.0.2" was previously imported
-    When resolving with aether
-    Then it should fail with "Circular imports detected for com.talios:bill-of-materials:1.0.2 in cucumber"
+#  Scenario: Parse circular import declarations should fail
+#    Given the following script:
+#      """
+#      import com.talios:bill-of-materials:1.0.2;
+#      """
+#    And that "com.talios:bill-of-materials:1.0.2" was previously imported
+#    When resolving with aether
+#    Then it should fail with "Circular imports detected for com.talios:bill-of-materials:1.0.2 in cucumber-import"
 
   Scenario: Parse resolution request
     Given the following script:
@@ -72,16 +78,16 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.6"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0.pr1"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
       """
       repository http://nexus.smxemail.com/nexus/content/groups/public/;
-      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
+      resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.6"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.7"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
@@ -90,7 +96,7 @@ Feature: Range Resolver
       resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0-SNAPSHOT"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0.pr2-SNAPSHOT"
 
   Scenario: Resolution allow for explicit locked versions from Aether
     Given the following script:
@@ -125,7 +131,7 @@ Feature: Range Resolver
       // comment
       locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
       """
-    When when writing the DSL back out
+    When writing the DSL back out
     Then it should match the follow script:
       """
       // comment
@@ -159,14 +165,23 @@ Feature: Range Resolver
   Scenario: Importing DSL as unlocked
     Given the following script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
       locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
       """
     When importing as unlocked
-    And when writing the DSL back out
+    And writing the DSL back out
     Then it should match the follow script:
       """
       resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+
+  Scenario: Importing DSL as locked
+    Given the following script:
+      """
+      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      """
+    When writing the DSL back out
+    Then it should match the follow script:
+      """
       resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
       """
 
@@ -177,7 +192,7 @@ Feature: Range Resolver
       resolve lowest com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
       """
     When importing as snapshots
-    And when writing the DSL back out
+    And writing the DSL back out
     Then it should match the follow script:
       """
       resolve snapshot com.smxemail:com.smxemail.api:[1.0.0,2.0.0);
