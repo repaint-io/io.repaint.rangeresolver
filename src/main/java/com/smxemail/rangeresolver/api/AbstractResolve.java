@@ -42,7 +42,7 @@ public abstract class AbstractResolve implements PropertyBased {
   public abstract String sourceReference();
 
   @Value.Parameter
-  public abstract String resolutionGrouping();
+  public abstract String grouping();
 
   @Value.Derived
   public String key() {

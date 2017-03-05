@@ -1,11 +1,12 @@
 package com.smxemail.rangeresolver.api;
 
 import com.google.common.collect.Multimap;
+import javaslang.collection.List;
+import org.immutables.javaslang.encodings.JavaslangEncodingEnabled;
 import org.immutables.value.Value;
 
-import java.util.List;
-
 @Value.Immutable
+@JavaslangEncodingEnabled
 public abstract class AbstractRangeResolver {
 
   @Value.Parameter

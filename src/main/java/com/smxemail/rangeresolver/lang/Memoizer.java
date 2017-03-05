@@ -14,7 +14,7 @@ public class Memoizer<T, U> {
     return input -> cache.computeIfAbsent(input, function);
   }
 
-  public static <T, U> Function<T, U> memoize(final Function<T, U> function) {
+  public static <T, U> Function<T, U> memo(final Function<T, U> function) {
     return new Memoizer<T, U>().doMemoize(function);
   }
 }

@@ -37,11 +37,16 @@
       <version>2.4.3</version>
       <scope>provided</scope>
     </dependency>
-
     <dependency>
-      <groupId>one.util</groupId>
-      <artifactId>streamex</artifactId>
-      <version>0.6.5</version>
+      <groupId>org.immutables.javaslang</groupId>
+      <artifactId>javaslang-encodings</artifactId>
+      <version>0.2.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.javaslang</groupId>
+      <artifactId>javaslang</artifactId>
+      <version>2.1.0-alpha</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

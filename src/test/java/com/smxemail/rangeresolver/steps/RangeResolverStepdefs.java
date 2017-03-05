@@ -1,6 +1,5 @@
 package com.smxemail.rangeresolver.steps;
 
-import com.google.common.collect.ImmutableList;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
@@ -29,6 +28,7 @@ import java.util.regex.Pattern;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
+import static javaslang.API.List;
 
 public class RangeResolverStepdefs {
 
@@ -274,12 +274,11 @@ public class RangeResolverStepdefs {
 
   @When("^importing as unlocked$")
   public void importingAsUnlocked() {
-    rangeResolver = unlockDependencies(rangeResolver, ImmutableList.of(Pattern.compile(".*")));
+    rangeResolver = unlockDependencies(rangeResolver, List(Pattern.compile(".*")));
   }
 
   @When("^importing as snapshots$")
   public void importingAsSnapshots() {
-    rangeResolver =
-        snapshotDependencies(rangeResolver, this::warn, ImmutableList.of(Pattern.compile(".*")));
+    rangeResolver = snapshotDependencies(rangeResolver, this::warn, List(Pattern.compile(".*")));
   }
 }

@@ -15,15 +15,15 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
+import javaslang.collection.List;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
@@ -41,8 +41,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     this.sourceReference = sourceReference;
   }
 
-  private <T, R> List<R> mapList(List<T> list, Function<T, R> fn) {
-    return list.stream().map(fn).collect(Collectors.toList());
+  private <T, R> List<R> mapList(Iterable<T> list, Function<T, R> fn) {
+    return StreamSupport.stream(list.spliterator(), false).map(fn).collect(List.collector());
   }
 
   @Override
@@ -68,8 +68,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     Collector<PropertyBased, ?, java.util.Map<String, String>> collector =
         Collectors.toMap(PropertyBased::key, PropertyBased::propertyName);
 
-    Map<String, String> propertyNames = resolves.stream().collect(collector);
-    Map<String, String> aliasNames = aliases.stream().collect(collector);
+    Map<String, String> propertyNames = resolves.collect(collector);
+    Map<String, String> aliasNames = aliases.collect(collector);
 
     Map<String, String> effectivePropertyNames = new HashMap<>();
     effectivePropertyNames.putAll(propertyNames);
@@ -91,7 +91,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private boolean hasDuplicates(List<?> list) {
-    return list.size() != new HashSet<>(list).size();
+    return list.size() != list.toSet().size();
   }
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
@@ -142,18 +142,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(List<Allow> allows) {
     List<Pattern> unlocked =
-        allows
-            .stream()
-            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-            .map(Allow::pattern)
-            .collect(Collectors.toList());
+        allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED).map(Allow::pattern);
 
     List<Pattern> snapshots =
-        allows
-            .stream()
-            .filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
-            .map(Allow::pattern)
-            .collect(Collectors.toList());
+        allows.filter(allow -> allow.allowable() == Allowable.SNAPSHOTS).map(Allow::pattern);
 
     return importContext ->
         Import.of(
@@ -220,7 +212,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     }
   }
 
-  private String comments(List<RangeResolverParser.CommentContext> comment) {
+  private String comments(Iterable<RangeResolverParser.CommentContext> comment) {
     if (comment == null) {
       return "";
     } else {
