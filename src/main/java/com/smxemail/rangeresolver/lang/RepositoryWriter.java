@@ -65,8 +65,8 @@ public class RepositoryWriter {
           printComments(pw, resolve.comments());
           pw.printf("resolve %s %s", boundSpec, gav);
 
-          if (!resolve.resolutionGrouping().equals("default")) {
-            pw.printf(" via %s", resolve.resolutionGrouping());
+          if (!resolve.grouping().equals("default")) {
+            pw.printf(" via %s", resolve.grouping());
           }
 
           if (resolve.bounds() != Bound.SNAPSHOT

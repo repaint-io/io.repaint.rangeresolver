@@ -23,7 +23,7 @@ public abstract class AbstractRange {
     return Range.of("[", version, version, "]");
   }
 
-  public static Range openUpper(String lower, String upper) {
+  public static Range excludingUpper(String lower, String upper) {
     return Range.of("[", lower, upper, ")");
   }
 

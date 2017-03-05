@@ -1,6 +1,5 @@
 package com.smxemail.rangeresolver.steps;
 
-import com.google.common.collect.ImmutableList;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
@@ -29,10 +28,12 @@ import java.util.regex.Pattern;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
+import static javaslang.API.List;
 
 public class RangeResolverStepdefs {
 
   public static final String SOURCE_REFERENCE = "cucumber";
+  public static final String IMPORT_REFERENCE = "cucumber-import";
 
   private RangeResolver rangeResolver;
 
@@ -45,6 +46,8 @@ public class RangeResolverStepdefs {
   private List<String> warnMessages;
 
   private String rangeResolverSource;
+
+  private String baseScript = "";
 
   private ResolutionResult resolutionResult;
 
@@ -73,8 +76,7 @@ public class RangeResolverStepdefs {
     rangeResolverSource = "";
   }
 
-  @Given("^the following script:$")
-  public void givenTheFollowingScript(String script) throws IOException {
+  private void processResolutionScript(String script) {
     try {
       rangeResolver =
           RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
@@ -84,7 +86,23 @@ public class RangeResolverStepdefs {
     }
   }
 
-  @When("^when writing the DSL back out$")
+  @Given("^the following base script:$")
+  public void givenTheFollowingBaseScript(String script) throws IOException {
+    baseScript = script;
+    processResolutionScript(script);
+  }
+
+  @Given("^the following raw script:$")
+  public void givenTheFollowingRawScript(String script) throws IOException {
+    processResolutionScript(script);
+  }
+
+  @Given("^the following script:$")
+  public void givenTheFollowingScript(String script) throws IOException {
+    processResolutionScript(baseScript + "\n\n" + script);
+  }
+
+  @When("^writing the DSL back out$")
   public void whenWritingTheDSLBackOut() {
     StringWriter sw = new StringWriter();
     RepositoryWriter.writeRangeResolveSource(rangeResolver, sw);
@@ -187,7 +205,7 @@ public class RangeResolverStepdefs {
   public void resolvingWithAetherShouldSucceed() {
     try {
       resolutionResult =
-          repositoryResolver.resolveRanges(previousImports, rangeResolver, SOURCE_REFERENCE);
+          repositoryResolver.resolveRanges(rangeResolver, IMPORT_REFERENCE, SOURCE_REFERENCE);
     } catch (Exception e) {
       rangeResolverException = e;
     }
@@ -256,12 +274,11 @@ public class RangeResolverStepdefs {
 
   @When("^importing as unlocked$")
   public void importingAsUnlocked() {
-    rangeResolver = unlockDependencies(rangeResolver, ImmutableList.of(Pattern.compile(".*")));
+    rangeResolver = unlockDependencies(rangeResolver, List(Pattern.compile(".*")));
   }
 
   @When("^importing as snapshots$")
   public void importingAsSnapshots() {
-    rangeResolver =
-        snapshotDependencies(rangeResolver, this::warn, ImmutableList.of(Pattern.compile(".*")));
+    rangeResolver = snapshotDependencies(rangeResolver, this::warn, List(Pattern.compile(".*")));
   }
 }
