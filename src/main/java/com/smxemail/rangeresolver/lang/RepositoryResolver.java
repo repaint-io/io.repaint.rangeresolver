@@ -340,11 +340,8 @@ public class RepositoryResolver {
                   }
                 });
 
-    List<Resolved> lockedWithoutSnapshots =
-        importedRangeResolver.locked().filter(isNonMatchingResolvedSnapshot);
-
     importedRangeResolver =
-        importedRangeResolver.withResolves(snapshotResolves).withLocked(lockedWithoutSnapshots);
+        importedRangeResolver.withResolves(snapshotResolves).withLocked(importedRangeResolver.locked());
     return importedRangeResolver;
   }
 
