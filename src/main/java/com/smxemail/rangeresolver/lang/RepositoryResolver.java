@@ -324,8 +324,6 @@ public class RepositoryResolver {
       Consumer<String> warningLogger,
       List<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
-    Predicate<Resolved> isNonMatchingResolvedSnapshot =
-        resolve -> !matchesAny(snapshots).test(resolve.key());
 
     List<Resolve> snapshotResolves =
         importedRangeResolver
