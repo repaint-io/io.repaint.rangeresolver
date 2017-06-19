@@ -4,7 +4,7 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.1.4-SNAPSHOT</version>
+  <version>1.1.5-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
@@ -34,24 +34,18 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>2.4.3</version>
+      <version>2.5.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.immutables.javaslang</groupId>
-      <artifactId>javaslang-encodings</artifactId>
-      <version>0.2.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.javaslang</groupId>
-      <artifactId>javaslang</artifactId>
-      <version>2.1.0-alpha</version>
+      <groupId>io.vavr</groupId>
+      <artifactId>vavr</artifactId>
+      <version>0.9.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>21.0</version>
+      <version>22.0</version>
     </dependency>
 
     <!-- resolver deps -->
@@ -59,24 +53,19 @@
     <dependency>
        <groupId>org.apache.maven</groupId>
        <artifactId>maven-artifact</artifactId>
-       <version>3.5.0-alpha-1</version>
+       <version>3.5.0</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.5.0-alpha-1</version>
+      <version>3.5.0</version>
     </dependency>
 
     <dependency>
         <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-api</artifactId>
         <version>1.0.3</version>
-    </dependency>
-    <dependency>
-       <groupId>org.apache.maven.resolver</groupId>
-       <artifactId>maven-resolver-spi</artifactId>
-       <version>1.0.3</version>
     </dependency>
     <dependency>
        <groupId>org.apache.maven.resolver</groupId>
@@ -121,13 +110,13 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.32</version>
+      <version>0.33</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth.extensions</groupId>
       <artifactId>truth-java8-extension</artifactId>
-      <version>0.32</version>
+      <version>0.33</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -135,8 +124,6 @@
       <artifactId>diff-match-patch</artifactId>
       <version>1.1</version>
     </dependency>
-
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

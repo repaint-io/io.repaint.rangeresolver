@@ -44,11 +44,13 @@ public abstract class AbstractResolve implements PropertyBased {
   @Value.Parameter
   public abstract String grouping();
 
+  @Override
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());
   }
 
+  @Override
   @Value.Derived
   public String propertyName() {
     return String.format(ARTIFACT_VERSION, artifact());

@@ -37,6 +37,11 @@ public abstract class AbstractResolved {
     return String.format("%s:%s", group(), artifact());
   }
 
+  @Override
+  public String toString() {
+    return key() + ":" + constrainedRange().asVersionRange();
+  }
+
   public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey =
       Collectors.toMap(Resolved::key, Function.identity());
 

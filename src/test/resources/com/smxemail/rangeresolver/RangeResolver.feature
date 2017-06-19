@@ -78,7 +78,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0.pr2"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0.pr4"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
@@ -87,7 +87,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.8"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.9"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
@@ -96,7 +96,7 @@ Feature: Range Resolver
       resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.0.pr3-SNAPSHOT"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.1.pr3-SNAPSHOT"
 
   Scenario: Resolution allow for explicit locked versions from Aether
     Given the following script:

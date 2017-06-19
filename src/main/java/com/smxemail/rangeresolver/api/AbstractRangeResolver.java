@@ -1,12 +1,10 @@
 package com.smxemail.rangeresolver.api;
 
 import com.google.common.collect.Multimap;
-import javaslang.collection.List;
-import org.immutables.javaslang.encodings.JavaslangEncodingEnabled;
+import io.vavr.collection.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JavaslangEncodingEnabled
 public abstract class AbstractRangeResolver {
 
   @Value.Parameter
@@ -20,6 +18,9 @@ public abstract class AbstractRangeResolver {
 
   @Value.Parameter
   public abstract List<Resolve> resolves();
+
+  @Value.Parameter
+  public abstract List<Resolve> overrides();
 
   @Value.Parameter
   public abstract List<Alias> aliases();
