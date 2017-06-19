@@ -15,7 +15,7 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
-import javaslang.collection.List;
+import io.vavr.collection.List;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +52,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
     List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
+    List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
@@ -81,7 +82,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
 
     return RangeResolver.of(
-        repositoryMap, imports, allowables, resolves, aliases, resolveds, locked);
+        repositoryMap, imports, allowables, resolves, overrides, aliases, resolveds, locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -157,16 +158,20 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
             unlocked);
   }
 
-  private Resolve resolveResolve(RangeResolverParser.ResolveContext res) {
+  private Resolve resolveResolve(RangeResolverParser.ResolveContext resolve) {
+    return resolveResolution(resolve.resolution(), resolve.comment());
+  }
 
+  private Resolve resolveOverride(RangeResolverParser.OverrideContext overide) {
+    return resolveResolution(overide.resolution(), overide.comment());
+  }
+
+  private Resolve resolveResolution(
+      RangeResolverParser.ResolutionContext res,
+      java.util.List<RangeResolverParser.CommentContext> comments) {
+    RangeResolverParser.FilteringContext filtering = res.filtering();
     Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
-    Pattern filteringRegex;
-
-    if (res.filtering() == null) {
-      filteringRegex = bound == Bound.SNAPSHOT ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
-    } else {
-      filteringRegex = compileRegexLiteral(res.filtering().filter().getText());
-    }
+    Pattern filteringRegex = resolveFilteringPattern(filtering, bound);
 
     String grouping = "default";
     if (res.resolutionGrouping() != null) {
@@ -174,16 +179,28 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     }
 
     return Resolve.of(
-        comments(res.comment()),
+        comments(comments),
         res.rangedArtifact().group().getText(),
         res.rangedArtifact().artifactId().getText(),
         "",
         "pom",
-        Bound.valueOf(res.bounds().getText().toUpperCase()),
+        bound,
         range(res.rangedArtifact().range()),
         filteringRegex,
         sourceReference,
         grouping);
+  }
+
+  private Pattern resolveFilteringPattern(
+      RangeResolverParser.FilteringContext filtering, Bound bound) {
+    Pattern filteringRegex;
+
+    if (filtering == null) {
+      filteringRegex = bound == Bound.SNAPSHOT ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
+    } else {
+      filteringRegex = compileRegexLiteral(filtering.filter().getText());
+    }
+    return filteringRegex;
   }
 
   private Pattern compileRegexLiteral(String regex) {

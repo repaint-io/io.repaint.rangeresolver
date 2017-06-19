@@ -8,6 +8,7 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
+import io.vavr.collection.List;
 
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -53,30 +54,9 @@ public class RepositoryWriter {
         }
       }
 
-      if (!rangeResolver.resolves().isEmpty()) {
-        pw.println();
+      printResolution(pw, "resolve", rangeResolver.resolves());
 
-        for (Resolve resolve : rangeResolver.resolves()) {
-
-          String boundSpec = resolve.bounds().toString().toLowerCase();
-          String versionRange = resolve.range().asVersionRange();
-          String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
-
-          printComments(pw, resolve.comments());
-          pw.printf("resolve %s %s", boundSpec, gav);
-
-          if (!resolve.grouping().equals("default")) {
-            pw.printf(" via %s", resolve.grouping());
-          }
-
-          if (resolve.bounds() != Bound.SNAPSHOT
-              && resolve.filtering() != ALLOW_SNAPSHOTS
-              && resolve.filtering() != FILTER_SNAPSHOTS) {
-            pw.printf(" filtering /%s/", resolve.filtering());
-          }
-          pw.printf(";\n");
-        }
-      }
+      printResolution(pw, "override", rangeResolver.overrides());
 
       if (!rangeResolver.aliases().isEmpty()) {
         pw.println();
@@ -107,6 +87,33 @@ public class RepositoryWriter {
               "locked %s:%s:%s from %s;\n",
               resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
         }
+      }
+    }
+  }
+
+  private static void printResolution(PrintWriter pw, String command, List<Resolve> resolves) {
+    if (!resolves.isEmpty()) {
+      pw.println();
+
+      for (Resolve resolve : resolves) {
+
+        String boundSpec = resolve.bounds().toString().toLowerCase();
+        String versionRange = resolve.range().asVersionRange();
+        String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
+
+        printComments(pw, resolve.comments());
+        pw.printf("%s %s %s", command, boundSpec, gav);
+
+        if (!resolve.grouping().equals("default")) {
+          pw.printf(" via %s", resolve.grouping());
+        }
+
+        if (resolve.bounds() != Bound.SNAPSHOT
+            && resolve.filtering() != ALLOW_SNAPSHOTS
+            && resolve.filtering() != FILTER_SNAPSHOTS) {
+          pw.printf(" filtering /%s/", resolve.filtering());
+        }
+        pw.printf(";\n");
       }
     }
   }

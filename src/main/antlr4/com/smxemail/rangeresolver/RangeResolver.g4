@@ -6,12 +6,14 @@
 
 grammar RangeResolver;
 
-resolver: ( repository | allow | imported | resolve | alias | resolved | locked )* EOF;
+resolver: ( repository | allow | imported | override | resolve | alias | resolved | locked )* EOF;
 
 repository: comment*  REPOSITORY href respositoryGrouping? SEMI;
 allow: comment* ALLOW ALLOWABLE REGEX_VALUE SEMI;
 imported: comment* IMPORT resolvedArtifact SEMI;
-resolve: comment* RESOLVE bounds rangedArtifact resolutionGrouping? filtering? SEMI;
+override: comment* OVERRIDE resolution;
+resolve: comment* RESOLVE resolution;
+resolution: bounds rangedArtifact resolutionGrouping? filtering? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
 locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
@@ -46,6 +48,7 @@ value: VALUE;
 REPOSITORY: 'repository';
 IMPORT: 'import';
 ALIAS: 'alias';
+OVERRIDE: 'override';
 RESOLVE: 'resolve';
 ALLOW: 'allow';
 ALLOWABLE: ( SNAPSHOTS | UNLOCKED );

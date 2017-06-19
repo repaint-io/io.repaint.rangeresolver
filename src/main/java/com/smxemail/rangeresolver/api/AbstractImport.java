@@ -1,13 +1,11 @@
 package com.smxemail.rangeresolver.api;
 
-import javaslang.collection.List;
-import org.immutables.javaslang.encodings.JavaslangEncodingEnabled;
+import io.vavr.collection.List;
 import org.immutables.value.Value;
 
 import java.util.regex.Pattern;
 
 @Value.Immutable
-@JavaslangEncodingEnabled
 public abstract class AbstractImport {
 
   @Value.Parameter

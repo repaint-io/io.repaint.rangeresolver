@@ -12,8 +12,8 @@ import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
-import javaslang.collection.List;
-import javaslang.control.Option;
+import io.vavr.control.Option;
+import io.vavr.collection.List;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -62,9 +62,9 @@ import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeR
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 import static java.util.stream.Collectors.toList;
-import static javaslang.API.List;
-import static javaslang.control.Option.none;
-import static javaslang.control.Option.some;
+import static io.vavr.API.List;
+import static io.vavr.control.Option.none;
+import static io.vavr.control.Option.some;
 
 public class RepositoryResolver {
 
@@ -133,20 +133,38 @@ public class RepositoryResolver {
 
     repositorySystem.newResolutionRepositories(session, repositories.toJavaList());
 
-    List<RangeResolver> resolvers =
+    List<RangeResolver> importedResolvers =
         parseImports(rangeResolver, sourceReference, session, repositories);
 
     Map<String, Resolved> importedArtifacts =
-        resolvers.flatMap(this::streamResolvedArtifacts).collect(Resolved.collectByKey);
+        importedResolvers.flatMap(this::streamResolvedArtifacts).collect(Resolved.collectByKey);
 
     Map<String, Resolve> resolvesFromLocal = rangeResolver.resolves().collect(Resolve.collectByKey);
 
+    Map<String, Resolve> overridesFromLocal =
+        rangeResolver.overrides().collect(Resolve.collectByKey);
+
     Map<String, Resolved> lockedFromLocal = rangeResolver.locked().collect(Resolved.collectByKey);
 
-    List<Resolve> imported = resolvers.flatMap(RangeResolver::resolves);
+    List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
+
+    // Check for duplicate reolves
+    List<String> duplicateResolutions =
+        imported.filter(r -> resolvesFromLocal.keySet().contains(r.key())).map(Resolve::key);
+
+    if (!duplicateResolutions.isEmpty()) {
+      throw new IllegalStateException(
+          String.format(
+              "pom.deps contains duplicate resolve declarations for: %s",
+              duplicateResolutions.mkString(", ")));
+    }
 
     infoLogger.accept("Resolving metadata for " + resolverReference);
-    List<Resolve> toResolve = imported.appendAll(rangeResolver.resolves());
+    List<Resolve> toResolve =
+        imported
+            .filter(r -> !overridesFromLocal.keySet().contains(r.key()))
+            .appendAll(rangeResolver.overrides())
+            .appendAll(rangeResolver.resolves());
 
     List<MetadataRequest> metadataRequests = toResolve.map(this::buildMetaDataRequest);
 
@@ -339,7 +357,9 @@ public class RepositoryResolver {
                 });
 
     importedRangeResolver =
-        importedRangeResolver.withResolves(snapshotResolves).withLocked(importedRangeResolver.locked());
+        importedRangeResolver
+            .withResolves(snapshotResolves)
+            .withLocked(importedRangeResolver.locked());
     return importedRangeResolver;
   }
 

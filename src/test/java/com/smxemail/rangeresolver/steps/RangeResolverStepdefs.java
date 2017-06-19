@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
-import static javaslang.API.List;
+import static io.vavr.API.List;
 
 public class RangeResolverStepdefs {
 
