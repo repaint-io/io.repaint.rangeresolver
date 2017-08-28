@@ -410,7 +410,7 @@ public class RepositoryResolver {
 
           return some(newlyResolved);
         } else {
-          return some(previouslyLockedResolution);
+          return none();
         }
       }
 
