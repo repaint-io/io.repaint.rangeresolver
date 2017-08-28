@@ -159,10 +159,13 @@ public class RepositoryResolver {
               duplicateResolutions.mkString(", ")));
     }
 
+    Predicate<Resolve> isUpdatedAllowed = matchesAnyAllowPattern(rangeResolver);
+
     infoLogger.accept("Resolving metadata for " + resolverReference);
     List<Resolve> toResolve =
         imported
             .filter(r -> !overridesFromLocal.keySet().contains(r.key()))
+            .filter(isUpdatedAllowed)
             .appendAll(rangeResolver.overrides())
             .appendAll(rangeResolver.resolves());
 
@@ -176,10 +179,9 @@ public class RepositoryResolver {
     Function<Resolve, Option<Resolved>> resolveArtifact =
         memo(
             resolve ->
-                resolveArtifact(
+                resolveArtifact(lockedFromLocal,
                     resolverReference, session, buildRepositories.apply(resolve), resolve));
 
-    Predicate<Resolve> isUpdatedAllowed = matchesAnyAllowPattern(rangeResolver);
     Predicate<Resolve> isLocallyDeclared = resolve -> resolvesFromLocal.containsKey(resolve.key());
     Predicate<Resolve> isUpdatedVersion =
         resolve ->
@@ -296,7 +298,7 @@ public class RepositoryResolver {
 
     // TODO Make resolveArtifact accept both Resolve and Imported
     try {
-      resolveArtifact(sourceReference, session, repositories, imported);
+      resolveArtifact(new HashMap<>(), sourceReference, session, repositories, imported);
     } catch (IllegalStateException ignored) {
       // ignore
     }
@@ -367,11 +369,10 @@ public class RepositoryResolver {
     return value -> patterns.exists(pattern -> pattern.matcher(value).matches());
   }
 
-  private Option<Resolved> resolveArtifact(
-      String sourceReference,
-      RepositorySystemSession session,
-      List<RemoteRepository> repositories,
-      Resolve resolve) {
+  private Option<Resolved> resolveArtifact(Map<String, Resolved> lockedFromLocal, String sourceReference,
+                                              RepositorySystemSession session,
+                                              List<RemoteRepository> repositories,
+                                              Resolve resolve) {
     try {
 
       Option<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
@@ -393,17 +394,24 @@ public class RepositoryResolver {
         String boundVersion =
             resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
 
-        Resolved resolved =
-            Resolved.of(
-                "",
-                resolve.group(),
-                resolve.artifact(),
-                boundVersion,
-                sourceReference,
-                resolve.propertyName(),
-                constrainedRange);
+        // Has resolved version actually changed?
+        Resolved previouslyLockedResolution = lockedFromLocal.get(resolve.key());
 
-        return some(resolved);
+        if (previouslyLockedResolution == null || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
+          Resolved newlyResolved =
+              Resolved.of(
+                  "",
+                  resolve.group(),
+                  resolve.artifact(),
+                  boundVersion,
+                  sourceReference,
+                  resolve.propertyName(),
+                  constrainedRange);
+
+          return some(newlyResolved);
+        } else {
+          return some(previouslyLockedResolution);
+        }
       }
 
     } catch (RepositoryException e) {
