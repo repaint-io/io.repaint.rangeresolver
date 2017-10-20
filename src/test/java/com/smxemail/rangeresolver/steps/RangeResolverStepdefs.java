@@ -63,7 +63,7 @@ public class RangeResolverStepdefs {
 
   private RepositoryResolver repositoryResolver =
       RepositoryResolver.createRepositoryResolver(
-          this::info, this::warn, resolveLocalRepository().getAbsolutePath(), true);
+          this::info, this::warn, resolveLocalRepository().getAbsolutePath(), "", "", true);
 
   @Before
   public void beforeScenario() {
@@ -79,7 +79,8 @@ public class RangeResolverStepdefs {
   private void processResolutionScript(String script) {
     try {
       rangeResolver =
-          RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
+          RangeResolverProcessor.parseRangeResolver(
+              SOURCE_REFERENCE, new StringReader(script), "", "");
     } catch (Exception e) {
       e.printStackTrace();
       rangeResolverException = e;
@@ -116,7 +117,8 @@ public class RangeResolverStepdefs {
         .that(rangeResolverSource.trim())
         .isEqualTo(script.trim());
     rangeResolver =
-        RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script));
+        RangeResolverProcessor.parseRangeResolver(
+            SOURCE_REFERENCE, new StringReader(script), "", "");
   }
 
   @Then("^the repository \"([^\"]*)\" should be declared with a grouping of \"([^\"]*)\"$")

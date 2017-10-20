@@ -73,9 +73,14 @@ public class RepositoryResolver {
   public static final String DEPS = "deps";
 
   private Consumer<String> infoLogger;
+
   private Consumer<String> warningLogger;
 
   private String localRepoDir;
+
+  private String allowUnlocked;
+
+  private String allowSnapshots;
 
   private boolean updateSnapshots;
 
@@ -85,10 +90,14 @@ public class RepositoryResolver {
       Consumer<String> infoLogger,
       Consumer<String> warningLogger,
       String localRepoDir,
+      String allowUnlocked,
+      String allowSnapshots,
       boolean updateSnapshots) {
     this.infoLogger = infoLogger;
     this.warningLogger = warningLogger;
     this.localRepoDir = localRepoDir;
+    this.allowUnlocked = allowUnlocked;
+    this.allowSnapshots = allowSnapshots;
     this.updateSnapshots = updateSnapshots;
     this.repositorySystem = newRepositorySystem();
   }
@@ -97,8 +106,11 @@ public class RepositoryResolver {
       Consumer<String> infoLogger,
       Consumer<String> warningLogger,
       String localRepoDir,
+      String allowUnlocked,
+      String allowSnapshots,
       boolean updateSnapshots) {
-    return new RepositoryResolver(infoLogger, warningLogger, localRepoDir, updateSnapshots);
+    return new RepositoryResolver(
+        infoLogger, warningLogger, localRepoDir, allowUnlocked, allowSnapshots, updateSnapshots);
   }
 
   private static RepositorySystem newRepositorySystem() {
@@ -179,8 +191,12 @@ public class RepositoryResolver {
     Function<Resolve, Option<Resolved>> resolveArtifact =
         memo(
             resolve ->
-                resolveArtifact(lockedFromLocal,
-                    resolverReference, session, buildRepositories.apply(resolve), resolve));
+                resolveArtifact(
+                    lockedFromLocal,
+                    resolverReference,
+                    session,
+                    buildRepositories.apply(resolve),
+                    resolve));
 
     Predicate<Resolve> isLocallyDeclared = resolve -> resolvesFromLocal.containsKey(resolve.key());
     Predicate<Resolve> isUpdatedVersion =
@@ -317,7 +333,8 @@ public class RepositoryResolver {
     }
 
     try {
-      RangeResolver resolver = parseRangeResolver(i.gav(), new FileReader(artifactFile));
+      RangeResolver resolver =
+          parseRangeResolver(i.gav(), new FileReader(artifactFile), allowUnlocked, allowSnapshots);
       return snapshotDependencies(resolver, warningLogger, i.snapshots());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -369,10 +386,12 @@ public class RepositoryResolver {
     return value -> patterns.exists(pattern -> pattern.matcher(value).matches());
   }
 
-  private Option<Resolved> resolveArtifact(Map<String, Resolved> lockedFromLocal, String sourceReference,
-                                              RepositorySystemSession session,
-                                              List<RemoteRepository> repositories,
-                                              Resolve resolve) {
+  private Option<Resolved> resolveArtifact(
+      Map<String, Resolved> lockedFromLocal,
+      String sourceReference,
+      RepositorySystemSession session,
+      List<RemoteRepository> repositories,
+      Resolve resolve) {
     try {
 
       Option<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
@@ -397,7 +416,8 @@ public class RepositoryResolver {
         // Has resolved version actually changed?
         Resolved previouslyLockedResolution = lockedFromLocal.get(resolve.key());
 
-        if (previouslyLockedResolution == null || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
+        if (previouslyLockedResolution == null
+            || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
           Resolved newlyResolved =
               Resolved.of(
                   "",

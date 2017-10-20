@@ -1,4 +1,3 @@
-
 package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;

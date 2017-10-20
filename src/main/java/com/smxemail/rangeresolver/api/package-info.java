@@ -1,4 +1,3 @@
-
 @Value.Style(
   defaults = @Value.Immutable(intern = true, builder = false),
   typeAbstract = {"Abstract*"},
