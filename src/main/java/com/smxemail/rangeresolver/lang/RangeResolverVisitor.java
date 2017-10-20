@@ -37,8 +37,14 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private final String sourceReference;
 
-  public RangeResolverVisitor(String sourceReference) {
+  private final String allowUnlocked;
+
+  private final String allowSnapshots;
+
+  public RangeResolverVisitor(String sourceReference, String allowUnlocked, String allowSnapshots) {
     this.sourceReference = sourceReference;
+    this.allowUnlocked = allowUnlocked;
+    this.allowSnapshots = allowSnapshots;
   }
 
   private <T, R> List<R> mapList(Iterable<T> list, Function<T, R> fn) {
@@ -49,6 +55,15 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   public RangeResolver visitResolver(RangeResolverParser.ResolverContext ctx) {
 
     List<Allow> allowables = mapList(ctx.allow(), this::resolveAllow);
+
+    if (!"".equals(allowUnlocked)) {
+      allowables =
+          allowables.append(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked)));
+    }
+    if (!"".equals(allowSnapshots)) {
+      allowables =
+          allowables.append(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots)));
+    }
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
     List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
@@ -77,9 +92,9 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     effectivePropertyNames.putAll(aliasNames);
 
     List<Resolved> resolveds =
-        mapList(ctx.resolved(), (res) -> resolveResolved(effectivePropertyNames, res));
+        mapList(ctx.resolved(), res -> resolveResolved(effectivePropertyNames, res));
     List<Resolved> locked =
-        mapList(ctx.locked(), (res) -> resolveLocked(effectivePropertyNames, res));
+        mapList(ctx.locked(), res -> resolveLocked(effectivePropertyNames, res));
 
     return RangeResolver.of(
         repositoryMap, imports, allowables, resolves, overrides, aliases, resolveds, locked);
