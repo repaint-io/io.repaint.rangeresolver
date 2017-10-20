@@ -1,6 +1,5 @@
 package com.smxemail.rangeresolver.lang;
 
-import com.google.common.collect.ImmutableSet;
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
 import com.smxemail.rangeresolver.api.Allow;
@@ -12,8 +11,10 @@ import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
-import io.vavr.control.Option;
+import io.vavr.collection.HashSet;
 import io.vavr.collection.List;
+import io.vavr.collection.Set;
+import io.vavr.control.Option;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -48,7 +49,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -61,10 +61,10 @@ import static com.smxemail.rangeresolver.lang.Memoizer.memo;
 import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
-import static java.util.stream.Collectors.toList;
 import static io.vavr.API.List;
 import static io.vavr.control.Option.none;
 import static io.vavr.control.Option.some;
+import static java.util.stream.Collectors.toList;
 
 public class RepositoryResolver {
 
@@ -286,7 +286,7 @@ public class RepositoryResolver {
     }
   }
 
-  public static List<Pattern> allowPatterns(RangeResolver rangeResolver) {
+  public static Set<Pattern> allowPatterns(RangeResolver rangeResolver) {
     return rangeResolver.allows().map(Allow::pattern);
   }
 
@@ -341,7 +341,7 @@ public class RepositoryResolver {
     }
   }
 
-  public static RangeResolver unlockDependencies(RangeResolver resolver, List<Pattern> unlocked) {
+  public static RangeResolver unlockDependencies(RangeResolver resolver, Set<Pattern> unlocked) {
     Predicate<Resolved> isMatchingUnlocked = resolved -> matchesAny(unlocked).test(resolved.key());
     List<Resolved> allResolved = List();
 
@@ -359,7 +359,7 @@ public class RepositoryResolver {
   public static RangeResolver snapshotDependencies(
       RangeResolver importedRangeResolver,
       Consumer<String> warningLogger,
-      List<Pattern> snapshots) {
+      Set<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
 
     List<Resolve> snapshotResolves =
@@ -382,7 +382,7 @@ public class RepositoryResolver {
     return importedRangeResolver;
   }
 
-  private static Predicate<String> matchesAny(List<Pattern> patterns) {
+  private static Predicate<String> matchesAny(Set<Pattern> patterns) {
     return value -> patterns.exists(pattern -> pattern.matcher(value).matches());
   }
 
@@ -459,12 +459,12 @@ public class RepositoryResolver {
       Range resolvedRange = resolveBoundRange(resolvedVersions);
       Set<ArtifactRequest> resolvedArtifactRequests =
           resovleArtifactRequests(repositories, resolve, resolvedRange);
-      repositorySystem.resolveArtifacts(session, resolvedArtifactRequests);
+      repositorySystem.resolveArtifacts(session, resolvedArtifactRequests.toJavaSet());
       return Option.of(resolvedRange);
     }
   }
 
-  private ImmutableSet<ArtifactRequest> resovleArtifactRequests(
+  private Set<ArtifactRequest> resovleArtifactRequests(
       List<RemoteRepository> repositories, Resolve resolve, Range range) {
     Artifact lowerArtifact =
         new DefaultArtifact(
@@ -481,7 +481,7 @@ public class RepositoryResolver {
             resolve.extension(),
             range.upper());
 
-    return ImmutableSet.of(
+    return HashSet.of(
         new ArtifactRequest(lowerArtifact, repositories.toJavaList(), ""),
         new ArtifactRequest(upperAritifact, repositories.toJavaList(), ""));
   }

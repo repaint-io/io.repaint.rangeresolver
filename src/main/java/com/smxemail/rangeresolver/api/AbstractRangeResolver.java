@@ -2,6 +2,7 @@ package com.smxemail.rangeresolver.api;
 
 import com.google.common.collect.Multimap;
 import io.vavr.collection.List;
+import io.vavr.collection.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -14,7 +15,7 @@ public abstract class AbstractRangeResolver {
   public abstract List<Import> imports();
 
   @Value.Parameter
-  public abstract List<Allow> allows();
+  public abstract Set<Allow> allows();
 
   @Value.Parameter
   public abstract List<Resolve> resolves();
