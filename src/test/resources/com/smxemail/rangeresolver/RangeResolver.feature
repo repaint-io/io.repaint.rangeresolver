@@ -119,6 +119,8 @@ Feature: Range Resolver
       // comment
       allow unlocked /^com.talios.*$/;
       allow snapshots /^com.talios.*$/;
+      // other comment
+      allow snapshots /^com.talios.*$/;
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:1.0.2;
@@ -142,9 +144,10 @@ Feature: Range Resolver
       import com.talios:bill-of-materials:1.0.2;
       import com.talios.test:bill-of-materials:1.0.2;
 
+      // other comment
+      allow snapshots /^com.talios.*$/;
       // comment
       allow unlocked /^com.talios.*$/;
-      allow snapshots /^com.talios.*$/;
 
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;

@@ -1,6 +1,6 @@
 package com.smxemail.rangeresolver.api;
 
-import io.vavr.collection.List;
+import io.vavr.collection.Set;
 import org.immutables.value.Value;
 
 import java.util.regex.Pattern;
@@ -21,10 +21,10 @@ public abstract class AbstractImport {
   public abstract String version();
 
   @Value.Parameter
-  public abstract List<Pattern> snapshots();
+  public abstract Set<Pattern> snapshots();
 
   @Value.Parameter
-  public abstract List<Pattern> unlocked();
+  public abstract Set<Pattern> unlocked();
 
   @Value.Derived
   public String key() {

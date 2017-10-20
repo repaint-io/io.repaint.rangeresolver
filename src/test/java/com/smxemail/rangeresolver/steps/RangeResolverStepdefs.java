@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
-import static io.vavr.API.List;
+import static io.vavr.API.Set;
 
 public class RangeResolverStepdefs {
 
@@ -276,11 +276,11 @@ public class RangeResolverStepdefs {
 
   @When("^importing as unlocked$")
   public void importingAsUnlocked() {
-    rangeResolver = unlockDependencies(rangeResolver, List(Pattern.compile(".*")));
+    rangeResolver = unlockDependencies(rangeResolver, Set(Pattern.compile(".*")));
   }
 
   @When("^importing as snapshots$")
   public void importingAsSnapshots() {
-    rangeResolver = snapshotDependencies(rangeResolver, this::warn, List(Pattern.compile(".*")));
+    rangeResolver = snapshotDependencies(rangeResolver, this::warn, Set(Pattern.compile(".*")));
   }
 }

@@ -16,6 +16,7 @@ import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 import io.vavr.collection.List;
+import io.vavr.collection.Set;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,15 +55,15 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   @Override
   public RangeResolver visitResolver(RangeResolverParser.ResolverContext ctx) {
 
-    List<Allow> allowables = mapList(ctx.allow(), this::resolveAllow);
+    Set<Allow> allowables = mapList(ctx.allow(), this::resolveAllow).toSortedSet();
 
     if (!"".equals(allowUnlocked)) {
       allowables =
-          allowables.append(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked)));
+          allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked)));
     }
     if (!"".equals(allowSnapshots)) {
       allowables =
-          allowables.append(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots)));
+          allowables.add(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots)));
     }
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
@@ -156,11 +157,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         Range.fixed(version));
   }
 
-  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(List<Allow> allows) {
-    List<Pattern> unlocked =
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows) {
+    Set<Pattern> unlocked =
         allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED).map(Allow::pattern);
 
-    List<Pattern> snapshots =
+    Set<Pattern> snapshots =
         allows.filter(allow -> allow.allowable() == Allowable.SNAPSHOTS).map(Allow::pattern);
 
     return importContext ->
