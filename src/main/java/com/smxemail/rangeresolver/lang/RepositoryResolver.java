@@ -2,7 +2,6 @@ package com.smxemail.rangeresolver.lang;
 
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
-import com.smxemail.rangeresolver.api.Allow;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.Range;
@@ -14,6 +13,7 @@ import com.smxemail.rangeresolver.api.Resolved;
 import io.vavr.collection.HashSet;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
+import io.vavr.collection.TreeSet;
 import io.vavr.control.Option;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -287,7 +288,8 @@ public class RepositoryResolver {
   }
 
   public static Set<Pattern> allowPatterns(RangeResolver rangeResolver) {
-    return rangeResolver.allows().map(Allow::pattern);
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
+    return rangeResolver.allows().foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
   }
 
   private RangeResolver parseImport(
