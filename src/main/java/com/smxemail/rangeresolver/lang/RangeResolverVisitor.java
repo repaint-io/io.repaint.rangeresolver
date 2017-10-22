@@ -17,7 +17,9 @@ import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.Resolved;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
+import io.vavr.collection.TreeSet;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -158,11 +160,15 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows) {
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
+
     Set<Pattern> unlocked =
-        allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED).map(Allow::pattern);
+        allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+              .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     Set<Pattern> snapshots =
-        allows.filter(allow -> allow.allowable() == Allowable.SNAPSHOTS).map(Allow::pattern);
+        allows.filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
+              .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     return importContext ->
         Import.of(
