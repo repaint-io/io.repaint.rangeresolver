@@ -61,11 +61,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     if (!"".equals(allowUnlocked)) {
       allowables =
-          allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked)));
+          allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked), false));
     }
     if (!"".equals(allowSnapshots)) {
       allowables =
-          allowables.add(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots)));
+          allowables.add(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots), false));
     }
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
@@ -106,7 +106,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
     Pattern pattern = compileRegexLiteral(rep.REGEX_VALUE().getText());
     Allowable allowable = Allowable.valueOf(rep.ALLOWABLE().getText().toUpperCase());
-    return Allow.of(comments(rep.comment()), allowable, pattern);
+    return Allow.of(comments(rep.comment()), allowable, pattern, true);
   }
 
   private boolean hasDuplicates(List<?> list) {
