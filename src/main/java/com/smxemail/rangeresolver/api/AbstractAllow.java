@@ -18,6 +18,9 @@ public abstract class AbstractAllow implements Comparable<AbstractAllow> {
   @Value.Parameter
   public abstract Pattern pattern();
 
+  @Value.Parameter
+  public abstract boolean persistent();
+
   @Override
   public int compareTo(AbstractAllow o) {
     return Objects.compare(this, o,

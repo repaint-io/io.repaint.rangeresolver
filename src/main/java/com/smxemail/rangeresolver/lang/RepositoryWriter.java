@@ -49,8 +49,10 @@ public class RepositoryWriter {
         pw.println();
 
         for (Allow allow : rangeResolver.allows()) {
-          printComments(pw, allow.comments());
-          pw.printf("allow %s /%s/;\n", allow.allowable().name().toLowerCase(), allow.pattern());
+          if (allow.persistent()) {
+            printComments(pw, allow.comments());
+            pw.printf("allow %s /%s/;\n", allow.allowable().name().toLowerCase(), allow.pattern());
+          }
         }
       }
 
