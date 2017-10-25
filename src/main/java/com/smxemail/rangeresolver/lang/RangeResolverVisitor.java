@@ -160,15 +160,18 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows) {
-    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
+    TreeSet<Pattern> emptyPattens =
+        TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
 
     Set<Pattern> unlocked =
-        allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-              .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+        allows
+            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     Set<Pattern> snapshots =
-        allows.filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
-              .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+        allows
+            .filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
+            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     return importContext ->
         Import.of(

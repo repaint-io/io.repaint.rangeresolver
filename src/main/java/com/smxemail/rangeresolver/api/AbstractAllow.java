@@ -2,9 +2,10 @@ package com.smxemail.rangeresolver.api;
 
 import org.immutables.value.Value;
 
-import java.util.Comparator;
-import java.util.Objects;
 import java.util.regex.Pattern;
+
+import static java.util.Comparator.comparing;
+import static java.util.Objects.compare;
 
 @Value.Immutable
 public abstract class AbstractAllow implements Comparable<AbstractAllow> {
@@ -23,9 +24,7 @@ public abstract class AbstractAllow implements Comparable<AbstractAllow> {
 
   @Override
   public int compareTo(AbstractAllow o) {
-    return Objects.compare(this, o,
-        Comparator.comparing(AbstractAllow::allowable)
-                  .thenComparing(aa -> aa.pattern().toString())
-    );
+    return compare(
+        this, o, comparing(AbstractAllow::allowable).thenComparing(aa -> aa.pattern().toString()));
   }
 }
