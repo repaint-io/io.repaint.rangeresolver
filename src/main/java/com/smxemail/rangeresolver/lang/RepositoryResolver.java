@@ -172,7 +172,7 @@ public class RepositoryResolver {
               duplicateResolutions.mkString(", ")));
     }
 
-    Predicate<Resolve> isUpdatedAllowed = matchesAnyAllowPattern(rangeResolver);
+    Predicate<Resolve> isUpdatedAllowed = matchesAllowOrOverride(rangeResolver);
 
     infoLogger.accept("Resolving metadata for " + resolverReference);
     List<Resolve> toResolve =
@@ -221,7 +221,12 @@ public class RepositoryResolver {
     List<Resolved> sortedUniqueResolved = sortResolvedThings(resolvedThings.values());
 
     Map<String, Resolved> localArtifacts = new HashMap<>(importedArtifacts);
-    localArtifacts.putAll(lockedFromLocal);
+    for (Resolved localResolved : lockedFromLocal.values()) {
+      Resolved importedResolved = localArtifacts.get(localResolved.key());
+      if (!isNewerVersion(importedResolved, localResolved)) {
+        localArtifacts.put(localResolved.key(), localResolved);
+      }
+    }
 
     List<Resolved> sortedUniqueLocked =
         sortResolvedThings(
@@ -240,9 +245,10 @@ public class RepositoryResolver {
         sortedUniqueLocked);
   }
 
-  private Predicate<Resolve> matchesAnyAllowPattern(RangeResolver rangeResolver) {
+  private Predicate<Resolve> matchesAllowOrOverride(RangeResolver rangeResolver) {
     Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver));
-    return resolve -> predicate.test(resolve.key());
+    List<String> overrideKeys = rangeResolver.overrides().map(Resolve::key);
+    return resolve -> overrideKeys.contains(resolve.key()) || predicate.test(resolve.key());
   }
 
   private List<RangeResolver> parseImports(
@@ -288,8 +294,10 @@ public class RepositoryResolver {
   }
 
   public static Set<Pattern> allowPatterns(RangeResolver rangeResolver) {
-    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
-    return rangeResolver.allows().foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
+    return rangeResolver
+        .allows()
+        .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
   }
 
   private RangeResolver parseImport(
@@ -359,9 +367,7 @@ public class RepositoryResolver {
   }
 
   public static RangeResolver snapshotDependencies(
-      RangeResolver importedRangeResolver,
-      Consumer<String> warningLogger,
-      Set<Pattern> snapshots) {
+      RangeResolver importedRangeResolver, Consumer<String> warningLogger, Set<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
 
     List<Resolve> snapshotResolves =
