@@ -54,6 +54,13 @@ Feature: Range Resolver
     And the dependency "com.smxemail:com.smxemail.impl" should use the classifer ""
     And the dependency "com.smxemail:com.smxemail.impl" should use the extension "pom"
 
+  Scenario: Parse resolution of artifacts with dashes
+    Given the following script:
+      """
+      resolve lowest com.smxemail:com-smxemail-api:[1.0.0,2.0.0);
+      """
+    Then the dependency "com.smxemail:com-smxemail-api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
+
   Scenario: Parse resolved artifact
     Given the following script:
       """
@@ -78,7 +85,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.4"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.5"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
@@ -87,7 +94,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.4"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.5"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:

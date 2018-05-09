@@ -4,7 +4,7 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.1.16-SNAPSHOT</version>
+  <version>1.1.18-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
@@ -23,7 +23,13 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>24.1-jre</version>
+      <version>[23.3-jre]</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.vavr</groupId>
@@ -33,13 +39,25 @@
     <dependency>
       <groupId>org.antlr</groupId>
       <artifactId>antlr4-runtime</artifactId>
-      <version>${antlr.version}</version>
+      <version>[4.7]</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- resolver deps -->
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>3.5.3</version>
+      <version>[3.5.2]</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -77,27 +95,27 @@
       <version>1.1.1</version>
     </dependency>
     <dependency>
-      <groupId>org.bitbucket.cowwoc</groupId>
-      <artifactId>diff-match-patch</artifactId>
-      <version>1.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>2.5.6</version>
+      <version>[2.5.6]</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.39</version>
+      <version>0.40</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth.extensions</groupId>
       <artifactId>truth-java8-extension</artifactId>
-      <version>0.39</version>
+      <version>0.40</version>
       <scope>test</scope>
     </dependency>
     <!-- resolver deps -->
@@ -119,6 +137,12 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.bitbucket.cowwoc</groupId>
+      <artifactId>diff-match-patch</artifactId>
+      <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -126,19 +150,19 @@
       <plugin>
         <groupId>io.repaint.maven</groupId>
         <artifactId>tiles-maven-plugin</artifactId>
-        <version>2.10</version>
+        <version>2.11</version>
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.0.0,3.0.0)</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.0,4.0.0)</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.1.40]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.1.36]</tile>
           </tiles>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr4-maven-plugin</artifactId>
-        <version>${antlr.version}</version>
+        <version>4.7</version>
         <executions>
           <execution>
             <goals>
@@ -149,49 +173,6 @@
         <configuration>
           <visitor>true</visitor>
           <treatWarningsAsErrors>true</treatWarningsAsErrors>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
-        <dependencies>
-          <dependency>
-            <groupId>com.google.errorprone</groupId>
-            <artifactId>error_prone_core</artifactId>
-            <version>2.2.0</version>
-          </dependency>
-          <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-compiler-javac-errorprone</artifactId>
-            <version>2.8.3</version>
-          </dependency>
-        </dependencies>
-        <configuration>
-          <compilerId>javac-with-errorprone</compilerId>
-          <forceJavacCompilerUse>true</forceJavacCompilerUse>
-          <compilerVersion>1.8</compilerVersion>
-          <source>1.8</source>
-          <target>1.8</target>
-          <useIncrementalCompilation>false</useIncrementalCompilation>
-          <showWarnings>${showWarnings}</showWarnings>
-          <compilerArgs>
-            <!-- <arg>-Xmaxerrs=1000000</arg> -->
-            <arg>-Xlint</arg>
-            <arg>-Xdiags:verbose</arg>
-            <arg>-Xep:OptionalEquality:WARN</arg>
-            <arg>-Xep:SelfComparison:ERROR</arg>
-            <arg>-Xep:SelfEquals:ERROR</arg>
-            <arg>-Xep:StringEquality:ERROR</arg>
-            <arg>-Xep:EqualsHashCode:ERROR</arg>
-            <arg>-Xep:EqualsIncompatibleType:ERROR</arg>
-            <arg>-Xep:NonOverridingEquals:ERROR</arg>
-            <arg>-Xep:NullableVoid:ERROR</arg>
-            <arg>-Xep:NullablePrimitive:ERROR</arg>
-            <arg>-Xep:NonOverridingEquals:ERROR</arg>
-            <arg>-Xep:NullableConstructor:ERROR</arg>
-            <arg>-Xep:MissingOverride:${errorProneMissingOverrideLevel}</arg>
-            <arg>-Xep:StaticQualifiedUsingExpression:ERROR</arg>
-          </compilerArgs>
         </configuration>
       </plugin>
     </plugins>
