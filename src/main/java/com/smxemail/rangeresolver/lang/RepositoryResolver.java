@@ -199,7 +199,7 @@ public class RepositoryResolver {
                     buildRepositories.apply(resolve),
                     resolve));
 
-    Predicate<Resolve> isLocallyDeclared = resolve -> resolvesFromLocal.containsKey(resolve.key());
+    Predicate<Resolve> isLocallyDeclared = resolve -> resolvesFromLocal.containsKey(resolve.key()) || overridesFromLocal.containsKey(resolve.key());
     Predicate<Resolve> isUpdatedVersion =
         resolve ->
             resolveArtifact

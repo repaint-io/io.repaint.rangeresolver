@@ -54,6 +54,13 @@ Feature: Range Resolver
     And the dependency "com.smxemail:com.smxemail.impl" should use the classifer ""
     And the dependency "com.smxemail:com.smxemail.impl" should use the extension "pom"
 
+  Scenario: Parse resolution of artifacts with dashes
+    Given the following script:
+      """
+      resolve lowest com.smxemail:com-smxemail-api:[1.0.0,2.0.0);
+      """
+    Then the dependency "com.smxemail:com-smxemail-api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
+
   Scenario: Parse resolved artifact
     Given the following script:
       """
