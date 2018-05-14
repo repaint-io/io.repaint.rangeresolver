@@ -154,10 +154,16 @@ public class RepositoryResolver {
 
     Map<String, Resolve> resolvesFromLocal = rangeResolver.resolves().collect(Resolve.collectByKey);
 
+    List<Object> overiddenKeysFromLocal = rangeResolver.overrides().map(Resolve::key);
+
     Map<String, Resolve> overridesFromLocal =
         rangeResolver.overrides().collect(Resolve.collectByKey);
 
-    Map<String, Resolved> lockedFromLocal = rangeResolver.locked().collect(Resolved.collectByKey);
+    Map<String, Resolved> lockedFromLocal =
+        rangeResolver
+            .locked()
+            .filter(r -> !overiddenKeysFromLocal.contains(r.key()))
+            .collect(Resolved.collectByKey);
 
     List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
 
@@ -199,7 +205,10 @@ public class RepositoryResolver {
                     buildRepositories.apply(resolve),
                     resolve));
 
-    Predicate<Resolve> isLocallyDeclared = resolve -> resolvesFromLocal.containsKey(resolve.key()) || overridesFromLocal.containsKey(resolve.key());
+    Predicate<Resolve> isLocallyDeclared =
+        resolve ->
+            resolvesFromLocal.containsKey(resolve.key())
+                || overridesFromLocal.containsKey(resolve.key());
     Predicate<Resolve> isUpdatedVersion =
         resolve ->
             resolveArtifact
