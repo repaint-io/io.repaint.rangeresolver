@@ -14,6 +14,7 @@
     <antlr.version>4.7.1</antlr.version>
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <dependency.check.fastfail>false</dependency.check.fastfail>
+    <errorProneNullAwayLevel>ERROR</errorProneNullAwayLevel>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
@@ -23,7 +24,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>[23.3-jre]</version>
+      <version>[25.1-jre]</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -39,7 +40,7 @@
     <dependency>
       <groupId>org.antlr</groupId>
       <artifactId>antlr4-runtime</artifactId>
-      <version>[4.7]</version>
+      <version>[4.7.1]</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -95,9 +96,14 @@
       <version>1.1.1</version>
     </dependency>
     <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
+      <version>16.0.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <version>[2.5.6]</version>
+      <version>[2.6.1]</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -109,26 +115,26 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.40</version>
+      <version>0.42</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth.extensions</groupId>
       <artifactId>truth-java8-extension</artifactId>
-      <version>0.40</version>
+      <version>0.42</version>
       <scope>test</scope>
     </dependency>
     <!-- resolver deps -->
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <version>2.4.0</version>
+      <version>3.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit</artifactId>
-      <version>2.4.0</version>
+      <version>3.0.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -150,19 +156,19 @@
       <plugin>
         <groupId>io.repaint.maven</groupId>
         <artifactId>tiles-maven-plugin</artifactId>
-        <version>2.11</version>
+        <version>2.12</version>
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.1.40]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.1.36]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.1.44]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.1.55]</tile>
           </tiles>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr4-maven-plugin</artifactId>
-        <version>4.7</version>
+        <version>4.7.1</version>
         <executions>
           <execution>
             <goals>

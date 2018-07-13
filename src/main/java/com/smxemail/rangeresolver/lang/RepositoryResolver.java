@@ -1,5 +1,15 @@
 package com.smxemail.rangeresolver.lang;
 
+import static com.google.common.base.Strings.emptyToNull;
+import static com.smxemail.rangeresolver.lang.Memoizer.memo;
+import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
+import static io.vavr.API.List;
+import static io.vavr.control.Option.none;
+import static io.vavr.control.Option.some;
+import static java.util.stream.Collectors.toList;
+
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
 import com.smxemail.rangeresolver.api.Bound;
@@ -15,6 +25,19 @@ import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
 import io.vavr.control.Option;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -42,30 +65,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static com.google.common.base.Strings.emptyToNull;
-import static com.smxemail.rangeresolver.lang.Memoizer.memo;
-import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
-import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
-import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
-import static io.vavr.API.List;
-import static io.vavr.control.Option.none;
-import static io.vavr.control.Option.some;
-import static java.util.stream.Collectors.toList;
+import org.jetbrains.annotations.Nullable;
 
 public class RepositoryResolver {
 
@@ -74,17 +74,11 @@ public class RepositoryResolver {
   public static final String DEPS = "deps";
 
   private Consumer<String> infoLogger;
-
   private Consumer<String> warningLogger;
-
   private String localRepoDir;
-
   private String allowUnlocked;
-
   private String allowSnapshots;
-
   private boolean updateSnapshots;
-
   private RepositorySystem repositorySystem;
 
   private RepositoryResolver(
@@ -512,7 +506,7 @@ public class RepositoryResolver {
     }
   }
 
-  public static boolean isNewerVersion(String first, String second) {
+  public static boolean isNewerVersion(@Nullable String first, @Nullable String second) {
     if (second == null && first != null) {
       return true;
     }
@@ -525,7 +519,7 @@ public class RepositoryResolver {
     return vF.compareTo(vS) > 0;
   }
 
-  public static boolean isNewerVersion(Resolved first, Resolved second) {
+  public static boolean isNewerVersion(@Nullable Resolved first, @Nullable Resolved second) {
     if (second == null && first != null) {
       return true;
     }
@@ -533,7 +527,7 @@ public class RepositoryResolver {
       return false;
     }
 
-    return isNewerVersion(first.version(), second.version());
+    return isNewerVersion(first.version(), second != null ? second.version() : null);
   }
 
   private Predicate<Version> filterVersion(Resolve resolve) {
