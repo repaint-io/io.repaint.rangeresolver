@@ -7,6 +7,7 @@ import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
+import com.smxemail.rangeresolver.api.ResolveType;
 import com.smxemail.rangeresolver.api.Resolved;
 import io.vavr.collection.List;
 
@@ -56,9 +57,9 @@ public class RepositoryWriter {
         }
       }
 
-      printResolution(pw, "resolve", rangeResolver.resolves());
-
-      printResolution(pw, "override", rangeResolver.overrides());
+      printResolution(pw, "deprecate", ResolveType.DEPRECATE.from(rangeResolver));
+      printResolution(pw, "resolve", ResolveType.RESOLVE.from(rangeResolver));
+      printResolution(pw, "override", ResolveType.OVERRIDE.from(rangeResolver));
 
       if (!rangeResolver.aliases().isEmpty()) {
         pw.println();
@@ -69,26 +70,24 @@ public class RepositoryWriter {
         }
       }
 
-      if (!rangeResolver.resolved().isEmpty()) {
-        pw.println();
+      printResolved(pw, "deprecated", rangeResolver.deprecated());
+      printResolved(pw, "resolved", rangeResolver.resolved());
+      printResolved(pw, "locked", rangeResolver.locked());
+    }
+  }
 
-        for (Resolved resolved : rangeResolver.resolved()) {
-          printComments(pw, resolved.comments());
-          pw.printf(
-              "resolved %s:%s:%s from %s;\n",
-              resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
-        }
-      }
+  private static void printResolved(PrintWriter pw, String command, List<Resolved> deprecated) {
+    if (!deprecated.isEmpty()) {
+      pw.println();
 
-      if (!rangeResolver.locked().isEmpty()) {
-        pw.println();
-
-        for (Resolved resolved : rangeResolver.locked()) {
-          printComments(pw, resolved.comments());
-          pw.printf(
-              "locked %s:%s:%s from %s;\n",
-              resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
-        }
+      for (Resolved resolved : deprecated) {
+        printComments(pw, resolved.comments());
+        pw.printf(
+            command + " %s:%s:%s from %s;\n",
+            resolved.group(),
+            resolved.artifact(),
+            resolved.version(),
+            resolved.resolvedFrom());
       }
     }
   }

@@ -21,13 +21,13 @@ public abstract class AbstractRangeResolver {
   public abstract List<Resolve> resolves();
 
   @Value.Parameter
-  public abstract List<Resolve> overrides();
-
-  @Value.Parameter
   public abstract List<Alias> aliases();
 
   @Value.Parameter
   public abstract List<Resolved> resolved();
+
+  @Value.Parameter
+  public abstract List<Resolved> deprecated();
 
   @Value.Parameter
   public abstract List<Resolved> locked();

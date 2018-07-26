@@ -36,6 +36,9 @@ public abstract class AbstractResolve implements PropertyBased {
   public abstract Range range();
 
   @Value.Parameter
+  public abstract ResolveType resolveType();
+
+  @Value.Parameter
   public abstract Pattern filtering();
 
   @Value.Parameter

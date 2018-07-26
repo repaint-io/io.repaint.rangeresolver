@@ -131,7 +131,7 @@ Feature: Range Resolver
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:1.0.2;
-      resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
+      deprecate snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
@@ -139,6 +139,8 @@ Feature: Range Resolver
       resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
       // comment
       locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      // comment
+      deprecated com.smxemail:com.smxemail.spi:2.0.1 from com.talios:bill-of-materials:1.0.2;
       """
     When writing the DSL back out
     Then it should match the follow script:
@@ -156,14 +158,18 @@ Feature: Range Resolver
       // comment
       allow unlocked /^com.talios.*$/;
 
+      deprecate snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
+
       // comment
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0) via releases;
       resolve highest com.talios.test:bill-of-materials:[1.0.2];
-      resolve snapshot com.smxemail:com.smxemail.test:[13.0.0,20.0.0);
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0] filtering /^.*(SNAPSHOT|rc.*)$/;
 
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
+
+      // comment
+      deprecated com.smxemail:com.smxemail.spi:2.0.1 from com.talios:bill-of-materials:1.0.2;
 
       // comment
       resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;

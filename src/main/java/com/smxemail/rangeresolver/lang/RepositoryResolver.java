@@ -1,15 +1,5 @@
 package com.smxemail.rangeresolver.lang;
 
-import static com.google.common.base.Strings.emptyToNull;
-import static com.smxemail.rangeresolver.lang.Memoizer.memo;
-import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
-import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
-import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
-import static io.vavr.API.List;
-import static io.vavr.control.Option.none;
-import static io.vavr.control.Option.some;
-import static java.util.stream.Collectors.toList;
-
 import com.smxemail.rangeresolver.api.AbstractRepository;
 import com.smxemail.rangeresolver.api.AbstractResolve;
 import com.smxemail.rangeresolver.api.Bound;
@@ -19,25 +9,14 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.ResolutionResult;
 import com.smxemail.rangeresolver.api.Resolve;
+import com.smxemail.rangeresolver.api.ResolveType;
 import com.smxemail.rangeresolver.api.Resolved;
+import com.smxemail.rangeresolver.api.ResolvedType;
 import io.vavr.collection.HashSet;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
 import io.vavr.control.Option;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -66,6 +45,30 @@ import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import static com.google.common.base.Strings.emptyToNull;
+import static com.smxemail.rangeresolver.lang.Memoizer.memo;
+import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
+import static io.vavr.API.List;
+import static io.vavr.control.Option.none;
+import static io.vavr.control.Option.some;
+import static java.util.stream.Collectors.toList;
 
 public class RepositoryResolver {
 
@@ -146,45 +149,33 @@ public class RepositoryResolver {
     Map<String, Resolved> importedArtifacts =
         importedResolvers.flatMap(this::streamResolvedArtifacts).collect(Resolved.collectByKey);
 
-    Map<String, Resolve> resolvesFromLocal = rangeResolver.resolves().collect(Resolve.collectByKey);
-
-    List<Object> overiddenKeysFromLocal = rangeResolver.overrides().map(Resolve::key);
-
-    Map<String, Resolve> overridesFromLocal =
-        rangeResolver.overrides().collect(Resolve.collectByKey);
+    List<Resolve> resolvedResolves = ResolveType.RESOLVE.from(rangeResolver);
+    List<Resolve> overRiddenResolves = ResolveType.OVERRIDE.from(rangeResolver);
+    List<Resolve> deprecatedResolves = ResolveType.DEPRECATE.from(rangeResolver);
+    List<String> deprecatedKeysFromLocal = deprecatedResolves.map(Resolve::key);
+    Map<String, Resolve> resolvesFromLocal = resolvedResolves.collect(Resolve.collectByKey);
+    Map<String, Resolve> overridesFromLocal = overRiddenResolves.collect(Resolve.collectByKey);
+    Map<String, Resolve> deprecatesFromLocal = deprecatedResolves.collect(Resolve.collectByKey);
 
     Map<String, Resolved> lockedFromLocal =
         rangeResolver
             .locked()
-            .filter(r -> !overiddenKeysFromLocal.contains(r.key()))
+            .filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key()))
             .collect(Resolved.collectByKey);
 
     List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
 
-    // Check for duplicate reolves
-    List<String> duplicateResolutions =
-        imported.filter(r -> resolvesFromLocal.keySet().contains(r.key())).map(Resolve::key);
-
-    if (!duplicateResolutions.isEmpty()) {
-      throw new IllegalStateException(
-          String.format(
-              "pom.deps contains duplicate resolve declarations for: %s",
-              duplicateResolutions.mkString(", ")));
-    }
+    checkForDuplicateResolutions(resolvesFromLocal, deprecatesFromLocal, imported);
 
     Predicate<Resolve> isUpdatedAllowed = matchesAllowOrOverride(rangeResolver);
 
     infoLogger.accept("Resolving metadata for " + resolverReference);
     List<Resolve> toResolve =
         imported
-            .filter(r -> !overridesFromLocal.keySet().contains(r.key()))
-            .filter(isUpdatedAllowed)
-            .appendAll(rangeResolver.overrides())
+            .filter(isUpdatedAllowed.and(r -> !overridesFromLocal.keySet().contains(r.key())))
             .appendAll(rangeResolver.resolves());
 
-    List<MetadataRequest> metadataRequests = toResolve.map(this::buildMetaDataRequest);
-
-    repositorySystem.resolveMetadata(session, metadataRequests.toJavaList());
+    resolveArtifacts(session, toResolve);
 
     Function<Resolve, List<RemoteRepository>> buildRepositories =
         memo(resolve -> buildeRepositories(rangeResolver.repositories().get(resolve.grouping())));
@@ -203,6 +194,10 @@ public class RepositoryResolver {
         resolve ->
             resolvesFromLocal.containsKey(resolve.key())
                 || overridesFromLocal.containsKey(resolve.key());
+
+    Predicate<Resolve> isLocallyDeprecated =
+        resolve -> deprecatesFromLocal.containsKey(resolve.key());
+
     Predicate<Resolve> isUpdatedVersion =
         resolve ->
             resolveArtifact
@@ -213,15 +208,32 @@ public class RepositoryResolver {
                             && isNewerVersion(resolved, lockedFromLocal.get(resolve.key())))
                 .getOrElse(false);
 
-    Predicate<Resolve> isResolvable =
-        resolve ->
-            ((isUpdatedAllowed.test(resolve)) && isUpdatedVersion.test(resolve))
-                || isLocallyDeclared.test(resolve);
+    Predicate<Resolve> isResolvable = isUpdatedAllowed.and(isUpdatedVersion).or(isLocallyDeclared);
 
     Map<String, Resolved> resolvedThings =
-        toResolve.filter(isResolvable).flatMap(resolveArtifact).collect(Resolved.collectByKey);
+        toResolve
+            .filter(isResolvable)
+            .filter(r -> !deprecatedKeysFromLocal.contains(r.key()))
+            .flatMap(resolveArtifact)
+            .collect(Resolved.collectByKey);
+
+    Map<String, Resolved> importedDeprecations =
+        io.vavr.collection.HashMap.ofAll(importedArtifacts)
+            .filterValues(res -> res.resolutionType() == ResolvedType.DEPRECATED)
+            .toJavaMap();
+
+    final Map<String, Resolved> localDeprecations =
+        toResolve
+            .filter(isLocallyDeprecated)
+            .flatMap(resolveArtifact)
+            .collect(Resolved.collectByKey);
+
+    final Map<String, Resolved> deprecatedThings = new HashMap<>();
+    deprecatedThings.putAll(importedDeprecations);
+    deprecatedThings.putAll(localDeprecations);
 
     List<Resolved> sortedUniqueResolved = sortResolvedThings(resolvedThings.values());
+    List<Resolved> sortedUniqueDeprecated = sortResolvedThings(deprecatedThings.values());
 
     Map<String, Resolved> localArtifacts = new HashMap<>(importedArtifacts);
     for (Resolved localResolved : lockedFromLocal.values()) {
@@ -236,6 +248,7 @@ public class RepositoryResolver {
             localArtifacts
                 .values()
                 .stream()
+                .filter(r -> !deprecatedThings.containsKey(r.key()))
                 .filter(r -> !resolvedThings.containsKey(r.key()))
                 .collect(toList()));
 
@@ -244,13 +257,43 @@ public class RepositoryResolver {
     return ResolutionResult.of(
         rangeResolver.aliases(),
         rangeResolver.resolves(),
+        sortedUniqueDeprecated,
         sortedUniqueResolved,
         sortedUniqueLocked);
   }
 
+  private void resolveArtifacts(RepositorySystemSession session, List<Resolve> toResolve) {
+    List<MetadataRequest> metadataRequests = toResolve.map(this::buildMetaDataRequest);
+
+    repositorySystem.resolveMetadata(session, metadataRequests.toJavaList());
+  }
+
+  private void checkForDuplicateResolutions(
+      Map<String, Resolve> resolvesFromLocal,
+      Map<String, Resolve> deprecatesFromLocal,
+      List<Resolve> imported) {
+    // Check for duplicate resolves
+    List<String> duplicateResolutions =
+        imported
+            .filter(r -> resolvesFromLocal.keySet().contains(r.key()))
+            .filter(r -> deprecatesFromLocal.keySet().contains(r.key()))
+            .map(Resolve::key);
+
+    if (!duplicateResolutions.isEmpty()) {
+      throw new IllegalStateException(
+          String.format(
+              "pom.deps contains duplicate resolution declarations for: %s",
+              duplicateResolutions.mkString(", ")));
+    }
+  }
+
   private Predicate<Resolve> matchesAllowOrOverride(RangeResolver rangeResolver) {
     Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver));
-    List<String> overrideKeys = rangeResolver.overrides().map(Resolve::key);
+    List<String> overrideKeys =
+        rangeResolver
+            .resolves()
+            .filter(res -> res.resolveType() == ResolveType.OVERRIDE)
+            .map(Resolve::key);
     return resolve -> overrideKeys.contains(resolve.key()) || predicate.test(resolve.key());
   }
 
@@ -263,7 +306,7 @@ public class RepositoryResolver {
   }
 
   private List<Resolved> streamResolvedArtifacts(RangeResolver resolver) {
-    return resolver.resolved().appendAll(resolver.locked());
+    return resolver.resolved().appendAll(resolver.locked()).appendAll(resolver.deprecated());
   }
 
   public static List<Resolved> sortResolvedThings(Iterable<Resolved> values) {
@@ -321,6 +364,7 @@ public class RepositoryResolver {
             DEPS,
             importBound,
             Range.fixed(i.version()),
+            ResolveType.IMPORT,
             importFilter,
             sourceReference,
             "imported");
@@ -420,14 +464,17 @@ public class RepositoryResolver {
         return none();
 
       } else {
+        boolean deprecated = resolve.resolveType() == ResolveType.DEPRECATE;
         Range constrainedRange = resolvedVersionRange.get();
         String boundVersion =
             resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
 
         // Has resolved version actually changed?
         Resolved previouslyLockedResolution = lockedFromLocal.get(resolve.key());
+        ResolvedType resolvedType = deprecated ? ResolvedType.DEPRECATED : ResolvedType.RESOLVED;
 
         if (previouslyLockedResolution == null
+            || deprecated
             || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
           Resolved newlyResolved =
               Resolved.of(
@@ -437,7 +484,8 @@ public class RepositoryResolver {
                   boundVersion,
                   sourceReference,
                   resolve.propertyName(),
-                  constrainedRange);
+                  constrainedRange,
+                  resolvedType);
 
           return some(newlyResolved);
         } else {
