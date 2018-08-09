@@ -30,6 +30,7 @@ import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDepende
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
 import static io.vavr.API.Set;
 
+@SuppressWarnings("NullAway")
 public class RangeResolverStepdefs {
 
   public static final String SOURCE_REFERENCE = "cucumber";

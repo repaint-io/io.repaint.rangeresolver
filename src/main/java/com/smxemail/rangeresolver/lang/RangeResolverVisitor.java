@@ -14,7 +14,9 @@ import com.smxemail.rangeresolver.api.Range;
 import com.smxemail.rangeresolver.api.RangeResolver;
 import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
+import com.smxemail.rangeresolver.api.ResolveType;
 import com.smxemail.rangeresolver.api.Resolved;
+import com.smxemail.rangeresolver.api.ResolvedType;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
@@ -28,6 +30,9 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.smxemail.rangeresolver.api.ResolveType.DEPRECATE;
+import static com.smxemail.rangeresolver.api.ResolveType.OVERRIDE;
+import static com.smxemail.rangeresolver.api.ResolveType.RESOLVE;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
@@ -70,8 +75,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
     List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
-    List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
+    List<Resolve> deprecations = mapList(ctx.deprecate(), this::resolveDeprecations);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
+    List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
+    List<Resolve> allResolves = deprecations.appendAll(resolves).appendAll(overrides);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
     Multimap<String, Repository> repositoryMap =
@@ -98,9 +105,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         mapList(ctx.resolved(), res -> resolveResolved(effectivePropertyNames, res));
     List<Resolved> locked =
         mapList(ctx.locked(), res -> resolveLocked(effectivePropertyNames, res));
+    List<Resolved> deprecateds =
+        mapList(ctx.deprecated(), res -> resolveDeprecated(effectivePropertyNames, res));
 
     return RangeResolver.of(
-        repositoryMap, imports, allowables, resolves, overrides, aliases, resolveds, locked);
+        repositoryMap, imports, allowables, allResolves, aliases, resolveds, deprecateds, locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -136,7 +145,25 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         version,
         res.resolvedFromArtifact().getText(),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version));
+        Range.fixed(version),
+        ResolvedType.LOCKED);
+  }
+
+  private Resolved resolveDeprecated(
+      Map<String, String> propertyNames, RangeResolverParser.DeprecatedContext res) {
+    String group = res.resolvedArtifact().group().getText();
+    String artifact = res.resolvedArtifact().artifactId().getText();
+    String key = String.format("%s:%s", group, artifact);
+    String version = res.resolvedArtifact().version().getText();
+    return Resolved.of(
+        comments(res.comment()),
+        group,
+        artifact,
+        version,
+        res.resolvedFromArtifact().getText(),
+        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
+        Range.fixed(version),
+        ResolvedType.DEPRECATED);
   }
 
   private Resolved resolveResolved(
@@ -156,7 +183,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         version,
         res.resolvedFromArtifact().getText(),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version));
+        Range.fixed(version),
+        ResolvedType.RESOLVED);
   }
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows) {
@@ -184,15 +212,20 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext resolve) {
-    return resolveResolution(resolve.resolution(), resolve.comment());
+    return resolveResolution(resolve.resolution(), RESOLVE, resolve.comment());
+  }
+
+  private Resolve resolveDeprecations(RangeResolverParser.DeprecateContext resolve) {
+    return resolveResolution(resolve.resolution(), DEPRECATE, resolve.comment());
   }
 
   private Resolve resolveOverride(RangeResolverParser.OverrideContext overide) {
-    return resolveResolution(overide.resolution(), overide.comment());
+    return resolveResolution(overide.resolution(), OVERRIDE, overide.comment());
   }
 
   private Resolve resolveResolution(
       RangeResolverParser.ResolutionContext res,
+      ResolveType resolveType,
       java.util.List<RangeResolverParser.CommentContext> comments) {
     RangeResolverParser.FilteringContext filtering = res.filtering();
     Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
@@ -211,6 +244,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         "pom",
         bound,
         range(res.rangedArtifact().range()),
+        resolveType,
         filteringRegex,
         sourceReference,
         grouping);

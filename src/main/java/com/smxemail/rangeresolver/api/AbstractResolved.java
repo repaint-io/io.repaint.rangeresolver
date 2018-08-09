@@ -32,6 +32,9 @@ public abstract class AbstractResolved {
   @Value.Parameter
   public abstract Range constrainedRange();
 
+  @Value.Parameter
+  public abstract ResolvedType resolutionType();
+
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());
