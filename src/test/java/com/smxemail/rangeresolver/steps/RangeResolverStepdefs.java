@@ -149,6 +149,24 @@ public class RangeResolverStepdefs {
         String.format("No resolution for %s %s with range %s found.", bounds, artifact, range));
   }
 
+  @Then(
+      "^the resolved dependency \"([^\"]*)\" should be resolving against version \"([^\"]*)\"$")
+  public void theResolvedDependencyShouldBeResolvingAgainstTheRange(
+      String artifact, String version) {
+    io.vavr.collection.List<Resolved> allResolved =
+        io.vavr.collection.List.<Resolved>empty().appendAll(rangeResolver.resolved()).appendAll(rangeResolver.deprecated()).appendAll(rangeResolver.locked());
+
+    for (Resolved resolved : allResolved) {
+      if (artifact.equals(resolved.key())
+          && resolved.version().equals(version)) {
+        return;
+      }
+    }
+
+    throw new IllegalStateException(
+        String.format("No resolution for %s with version %s found.", artifact, version));
+  }
+
   @Then("^the dependency \"([^\"]*)\" should use the property \"([^\"]*)\"$")
   public void theDependencyShouldUseTheProperty(String artifact, String property) {
     for (Alias alias : rangeResolver.aliases()) {

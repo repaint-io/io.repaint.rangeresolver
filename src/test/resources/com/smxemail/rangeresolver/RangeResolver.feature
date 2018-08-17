@@ -58,8 +58,11 @@ Feature: Range Resolver
     Given the following script:
       """
       resolve lowest com.smxemail:com-smxemail-api:[1.0.0,2.0.0);
+
+      locked com.smxemail:com-smxemail-api:1.0.0 from test;
       """
     Then the dependency "com.smxemail:com-smxemail-api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
+    Then the resolved dependency "com.smxemail:com-smxemail-api" should be resolving against version "1.0.0"
 
   Scenario: Parse resolved artifact
     Given the following script:
