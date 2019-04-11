@@ -279,8 +279,8 @@ public class RangeResolverStepdefs {
         } else {
           throw new IllegalStateException(
               String.format(
-                  "Resolution of artifact %s found with unexpected version: %s.",
-                  artifact, resolved.version()));
+                  "Resolution of artifact %s:%s found with unexpected version: %s.",
+                  artifact, version, resolved.version()));
         }
       }
     }
