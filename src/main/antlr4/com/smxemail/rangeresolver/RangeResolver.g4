@@ -6,7 +6,7 @@
 
 grammar RangeResolver;
 
-resolver: ( repository | allow | imported | override | resolve | deprecate | alias | resolved | deprecated | locked )* EOF;
+resolver: ( repository | allow | imported | override | resolve | deprecate | blacklist | alias | resolved | deprecated | blacklisted | locked )* EOF;
 
 repository: comment*  REPOSITORY href respositoryGrouping? SEMI;
 allow: comment* ALLOW ALLOWABLE REGEX_VALUE SEMI;
@@ -14,11 +14,13 @@ imported: comment* IMPORT resolvedArtifact SEMI;
 override: comment* OVERRIDE resolution;
 resolve: comment* RESOLVE resolution;
 deprecate: comment* DEPRECATE resolution;
+blacklist: comment* BLACKLIST resolution;
 resolution: bounds rangedArtifact resolutionGrouping? filtering? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
 locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
 deprecated: comment* DEPRECATED resolvedArtifact FROM resolvedFromArtifact SEMI;
+blacklisted: comment* BLACKLISTED resolvedArtifact FROM resolvedFromArtifact SEMI;
 
 comment: COMMENT;
 respositoryGrouping: AS value;
@@ -53,12 +55,14 @@ ALIAS: 'alias';
 OVERRIDE: 'override';
 RESOLVE: 'resolve';
 DEPRECATE: 'deprecate';
+BLACKLIST: 'blacklist';
 ALLOW: 'allow';
 ALLOWABLE: ( SNAPSHOTS | UNLOCKED );
 FILTERING: 'filtering';
 RESOLVED: 'resolved';
 LOCKED: 'locked';
 DEPRECATED: 'deprecated';
+BLACKLISTED: 'blacklisted';
 UNLOCKED: 'unlocked';
 VIA: 'via';
 AS: 'as';

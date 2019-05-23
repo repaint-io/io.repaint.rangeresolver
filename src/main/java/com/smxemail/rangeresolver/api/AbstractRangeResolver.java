@@ -30,5 +30,8 @@ public abstract class AbstractRangeResolver {
   public abstract List<Resolved> deprecated();
 
   @Value.Parameter
+  public abstract List<Resolved> blacklisted();
+
+  @Value.Parameter
   public abstract List<Resolved> locked();
 }

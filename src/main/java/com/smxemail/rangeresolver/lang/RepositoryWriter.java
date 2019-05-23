@@ -57,6 +57,7 @@ public class RepositoryWriter {
         }
       }
 
+      printResolution(pw, "blacklist", ResolveType.BLACKLIST.from(rangeResolver));
       printResolution(pw, "deprecate", ResolveType.DEPRECATE.from(rangeResolver));
       printResolution(pw, "resolve", ResolveType.RESOLVE.from(rangeResolver));
       printResolution(pw, "override", ResolveType.OVERRIDE.from(rangeResolver));
@@ -70,17 +71,18 @@ public class RepositoryWriter {
         }
       }
 
+      printResolved(pw, "blacklisted", rangeResolver.blacklisted());
       printResolved(pw, "deprecated", rangeResolver.deprecated());
       printResolved(pw, "resolved", rangeResolver.resolved());
       printResolved(pw, "locked", rangeResolver.locked());
     }
   }
 
-  private static void printResolved(PrintWriter pw, String command, List<Resolved> deprecated) {
-    if (!deprecated.isEmpty()) {
+  private static void printResolved(PrintWriter pw, String command, List<Resolved> resolveds) {
+    if (!resolveds.isEmpty()) {
       pw.println();
 
-      for (Resolved resolved : deprecated) {
+      for (Resolved resolved : resolveds) {
         printComments(pw, resolved.comments());
         pw.printf(
             command + " %s:%s:%s from %s;\n",
