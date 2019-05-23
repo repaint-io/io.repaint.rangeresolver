@@ -30,6 +30,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.smxemail.rangeresolver.api.ResolveType.BLACKLIST;
 import static com.smxemail.rangeresolver.api.ResolveType.DEPRECATE;
 import static com.smxemail.rangeresolver.api.ResolveType.OVERRIDE;
 import static com.smxemail.rangeresolver.api.ResolveType.RESOLVE;
@@ -75,10 +76,12 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
     List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
+    List<Resolve> blacklists = mapList(ctx.blacklist(), this::resolveBlacklists);
     List<Resolve> deprecations = mapList(ctx.deprecate(), this::resolveDeprecations);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
-    List<Resolve> allResolves = deprecations.appendAll(resolves).appendAll(overrides);
+    List<Resolve> allResolves =
+        blacklists.appendAll(deprecations).appendAll(resolves).appendAll(overrides);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
     Multimap<String, Repository> repositoryMap =
@@ -107,9 +110,19 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         mapList(ctx.locked(), res -> resolveLocked(effectivePropertyNames, res));
     List<Resolved> deprecateds =
         mapList(ctx.deprecated(), res -> resolveDeprecated(effectivePropertyNames, res));
+    List<Resolved> blacklisted =
+        mapList(ctx.blacklisted(), res -> resolveBlacklisted(effectivePropertyNames, res));
 
     return RangeResolver.of(
-        repositoryMap, imports, allowables, allResolves, aliases, resolveds, deprecateds, locked);
+        repositoryMap,
+        imports,
+        allowables,
+        allResolves,
+        aliases,
+        resolveds,
+        deprecateds,
+        blacklisted,
+        locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -166,6 +179,23 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.DEPRECATED);
   }
 
+  private Resolved resolveBlacklisted(
+      Map<String, String> propertyNames, RangeResolverParser.BlacklistedContext res) {
+    String group = res.resolvedArtifact().group().getText();
+    String artifact = res.resolvedArtifact().artifactId().getText();
+    String key = String.format("%s:%s", group, artifact);
+    String version = res.resolvedArtifact().version().getText();
+    return Resolved.of(
+        comments(res.comment()),
+        group,
+        artifact,
+        version,
+        res.resolvedFromArtifact().getText(),
+        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
+        Range.fixed(version),
+        ResolvedType.BLACKLISTED);
+  }
+
   private Resolved resolveResolved(
       Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
     String group = res.resolvedArtifact().group().getText();
@@ -213,6 +243,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext resolve) {
     return resolveResolution(resolve.resolution(), RESOLVE, resolve.comment());
+  }
+
+  private Resolve resolveBlacklists(RangeResolverParser.BlacklistContext resolve) {
+    return resolveResolution(resolve.resolution(), BLACKLIST, resolve.comment());
   }
 
   private Resolve resolveDeprecations(RangeResolverParser.DeprecateContext resolve) {

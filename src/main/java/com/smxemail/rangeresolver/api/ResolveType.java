@@ -6,7 +6,8 @@ public enum ResolveType {
   IMPORT,
   RESOLVE,
   OVERRIDE,
-  DEPRECATE;
+  DEPRECATE,
+  BLACKLIST;
 
   public List<Resolve> from(RangeResolver rangeResolver) {
     return rangeResolver.resolves().filter(res -> res.resolveType() == this);

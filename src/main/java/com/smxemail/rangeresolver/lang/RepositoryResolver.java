@@ -44,6 +44,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -135,8 +136,7 @@ public class RepositoryResolver {
    * @throws RepositoryException
    */
   public ResolutionResult resolveRanges(
-      RangeResolver rangeResolver, String resolverReference, String sourceReference)
-      throws RepositoryException {
+      RangeResolver rangeResolver, String resolverReference, String sourceReference) {
     RepositorySystemSession session = newRepositorySystemSession();
 
     List<RemoteRepository> repositories = buildeRepositories(rangeResolver.repositories().values());
@@ -152,10 +152,12 @@ public class RepositoryResolver {
     List<Resolve> resolvedResolves = ResolveType.RESOLVE.from(rangeResolver);
     List<Resolve> overRiddenResolves = ResolveType.OVERRIDE.from(rangeResolver);
     List<Resolve> deprecatedResolves = ResolveType.DEPRECATE.from(rangeResolver);
+    List<Resolve> blacklistedResolves = ResolveType.BLACKLIST.from(rangeResolver);
     List<String> deprecatedKeysFromLocal = deprecatedResolves.map(Resolve::key);
     Map<String, Resolve> resolvesFromLocal = resolvedResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> overridesFromLocal = overRiddenResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> deprecatesFromLocal = deprecatedResolves.collect(Resolve.collectByKey);
+    Map<String, Resolve> blacklistsFromLocal = blacklistedResolves.collect(Resolve.collectByKey);
 
     Map<String, Resolved> lockedFromLocal =
         rangeResolver
@@ -165,7 +167,8 @@ public class RepositoryResolver {
 
     List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
 
-    checkForDuplicateResolutions(resolvesFromLocal, deprecatesFromLocal, imported);
+    checkForDuplicateResolutions(
+        imported, resolvesFromLocal, blacklistsFromLocal, deprecatesFromLocal);
 
     Predicate<Resolve> isUpdatedAllowed = matchesAllowOrOverride(rangeResolver);
 
@@ -190,13 +193,13 @@ public class RepositoryResolver {
                     buildRepositories.apply(resolve),
                     resolve));
 
-    Predicate<Resolve> isLocallyDeclared =
-        resolve ->
-            resolvesFromLocal.containsKey(resolve.key())
-                || overridesFromLocal.containsKey(resolve.key());
+    Predicate<Resolve> isLocallyDeclared = isLocallyDeclared(resolvesFromLocal, overridesFromLocal);
 
     Predicate<Resolve> isLocallyDeprecated =
         resolve -> deprecatesFromLocal.containsKey(resolve.key());
+
+    Predicate<Resolve> isLocallyBlacklisted =
+        resolve -> blacklistsFromLocal.containsKey(resolve.key());
 
     Predicate<Resolve> isUpdatedVersion =
         resolve ->
@@ -217,24 +220,70 @@ public class RepositoryResolver {
             .flatMap(resolveArtifact)
             .collect(Resolved.collectByKey);
 
-    Map<String, Resolved> importedDeprecations =
-        io.vavr.collection.HashMap.ofAll(importedArtifacts)
-            .filterValues(res -> res.resolutionType() == ResolvedType.DEPRECATED)
-            .toJavaMap();
+    Map<String, Resolved> importedBlacklists =
+        filterImported(importedArtifacts, ResolvedType.BLACKLISTED);
 
-    final Map<String, Resolved> localDeprecations =
+    Map<String, Resolved> importedDeprecations =
+        filterImported(importedArtifacts, ResolvedType.DEPRECATED);
+
+    Map<String, Resolved> localDeprecations =
         toResolve
             .filter(isLocallyDeprecated)
             .flatMap(resolveArtifact)
             .collect(Resolved.collectByKey);
 
-    final Map<String, Resolved> deprecatedThings = new HashMap<>();
-    deprecatedThings.putAll(importedDeprecations);
-    deprecatedThings.putAll(localDeprecations);
+    Map<String, Resolved> localBlacklists =
+        toResolve
+            .filter(isLocallyBlacklisted)
+            .flatMap(resolveArtifact)
+            .collect(Resolved.collectByKey);
+
+    Map<String, Resolved> deprecatedThings = mergeMaps(importedDeprecations, localDeprecations);
+    Map<String, Resolved> blacklistedThings = mergeMaps(importedBlacklists, localBlacklists);
 
     List<Resolved> sortedUniqueResolved = sortResolvedThings(resolvedThings.values());
     List<Resolved> sortedUniqueDeprecated = sortResolvedThings(deprecatedThings.values());
+    List<Resolved> sortedUniqueBlacklisted = sortResolvedThings(blacklistedThings.values());
+    List<Resolved> sortedUniqueLocked =
+        resolveSortedUniqueLocked(
+            importedArtifacts,
+            lockedFromLocal,
+            resolvedThings,
+            blacklistedThings,
+            deprecatedThings,
+            sortedUniqueResolved);
 
+    return ResolutionResult.of(
+        rangeResolver.aliases(),
+        rangeResolver.resolves(),
+        sortedUniqueBlacklisted,
+        sortedUniqueDeprecated,
+        sortedUniqueResolved,
+        sortedUniqueLocked);
+  }
+
+  private <K,V> Map<K, V> mergeMaps(
+      Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
+    Map<K, V> deprecatedThings = new HashMap<>();
+    deprecatedThings.putAll(importedDeprecations);
+    deprecatedThings.putAll(localDeprecations);
+    return deprecatedThings;
+  }
+
+  private Map<String, Resolved> filterImported(
+      Map<String, Resolved> importedArtifacts, ResolvedType blacklisted) {
+    return io.vavr.collection.HashMap.ofAll(importedArtifacts)
+        .filterValues(res -> res.resolutionType() == blacklisted)
+        .toJavaMap();
+  }
+
+  private List<Resolved> resolveSortedUniqueLocked(
+      Map<String, Resolved> importedArtifacts,
+      Map<String, Resolved> lockedFromLocal,
+      Map<String, Resolved> resolvedThings,
+      Map<String, Resolved> blackedListedThings,
+      Map<String, Resolved> deprecatedThings,
+      List<Resolved> sortedUniqueResolved) {
     Map<String, Resolved> localArtifacts = new HashMap<>(importedArtifacts);
     for (Resolved localResolved : lockedFromLocal.values()) {
       Resolved importedResolved = localArtifacts.get(localResolved.key());
@@ -245,21 +294,22 @@ public class RepositoryResolver {
 
     List<Resolved> sortedUniqueLocked =
         sortResolvedThings(
-            localArtifacts
-                .values()
-                .stream()
+            localArtifacts.values().stream()
+                .filter(r -> !blackedListedThings.containsKey(r.key()))
                 .filter(r -> !deprecatedThings.containsKey(r.key()))
                 .filter(r -> !resolvedThings.containsKey(r.key()))
                 .collect(toList()));
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
+    return sortedUniqueLocked;
+  }
 
-    return ResolutionResult.of(
-        rangeResolver.aliases(),
-        rangeResolver.resolves(),
-        sortedUniqueDeprecated,
-        sortedUniqueResolved,
-        sortedUniqueLocked);
+  @NotNull
+  private Predicate<Resolve> isLocallyDeclared(
+      Map<String, Resolve> resolvesFromLocal, Map<String, Resolve> overridesFromLocal) {
+    return resolve ->
+        resolvesFromLocal.containsKey(resolve.key())
+            || overridesFromLocal.containsKey(resolve.key());
   }
 
   private void resolveArtifacts(RepositorySystemSession session, List<Resolve> toResolve) {
@@ -269,21 +319,24 @@ public class RepositoryResolver {
   }
 
   private void checkForDuplicateResolutions(
+      List<Resolve> imported,
       Map<String, Resolve> resolvesFromLocal,
-      Map<String, Resolve> deprecatesFromLocal,
-      List<Resolve> imported) {
-    // Check for duplicate resolves
-    List<String> duplicateResolutions =
-        imported
-            .filter(r -> resolvesFromLocal.keySet().contains(r.key()))
-            .filter(r -> deprecatesFromLocal.keySet().contains(r.key()))
-            .map(Resolve::key);
+      Map<String, Resolve>... resolutions) {
 
-    if (!duplicateResolutions.isEmpty()) {
-      throw new IllegalStateException(
-          String.format(
-              "pom.deps contains duplicate resolution declarations for: %s",
-              duplicateResolutions.mkString(", ")));
+    for (Map<String, Resolve> resolveMap : resolutions) {
+      // Check for duplicate resolves
+      List<Resolve> importedMinusLocal =
+          imported.filter(r -> resolvesFromLocal.keySet().contains(r.key()));
+
+      List<String> duplicateResolutions =
+          importedMinusLocal.filter(r -> resolveMap.keySet().contains(r.key())).map(Resolve::key);
+
+      if (!duplicateResolutions.isEmpty()) {
+        throw new IllegalStateException(
+            String.format(
+                "pom.deps contains duplicate resolution declarations for: %s",
+                duplicateResolutions.mkString(", ")));
+      }
     }
   }
 
@@ -306,7 +359,7 @@ public class RepositoryResolver {
   }
 
   private List<Resolved> streamResolvedArtifacts(RangeResolver resolver) {
-    return resolver.resolved().appendAll(resolver.locked()).appendAll(resolver.deprecated());
+    return resolver.locked().appendAll(resolver.resolved()).appendAll(resolver.deprecated()).appendAll(resolver.blacklisted());
   }
 
   public static List<Resolved> sortResolvedThings(Iterable<Resolved> values) {

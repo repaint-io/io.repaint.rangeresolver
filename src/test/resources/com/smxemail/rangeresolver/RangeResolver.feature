@@ -58,8 +58,11 @@ Feature: Range Resolver
     Given the following script:
       """
       resolve lowest com.smxemail:com-smxemail-api:[1.0.0,2.0.0);
+
+      locked com.smxemail:com-smxemail-api:1.0.0 from test;
       """
     Then the dependency "com.smxemail:com-smxemail-api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
+    Then the resolved dependency "com.smxemail:com-smxemail-api" should be resolving against version "1.0.0"
 
   Scenario: Parse resolved artifact
     Given the following script:
@@ -85,7 +88,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.6"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.9"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
@@ -94,7 +97,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.6"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.9"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:

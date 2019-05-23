@@ -13,6 +13,9 @@ public abstract class AbstractResolutionResult {
   public abstract List<Resolve> resolves();
 
   @Value.Parameter
+  public abstract List<Resolved> blacklisted();
+
+  @Value.Parameter
   public abstract List<Resolved> deprecated();
 
   @Value.Parameter
