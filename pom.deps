@@ -13,11 +13,10 @@ override highest com.google.guava:guava:[28.0-jre,30.0) via public filtering /^.
 alias org.immutables:value as immutables.value.version;
 alias com.github.spullara.mustache.java:compiler as mustache.compiler.version;
 
-resolved com.google.guava:guava:28.0-jre from com.smxemail:com.smxemail.rangeresolver:1.1.22;
-resolved com.google.truth:truth:0.45 from com.smxemail:com.smxemail.rangeresolver:1.1.22;
-
 locked com.github.sviperll:adt4j:3.2 from smx3:smx3.bill-of-materials:2.1.1;
 locked com.google.auto.value:auto-value:1.5.2 from smx3:smx3.bill-of-materials:2.1.1;
+locked com.google.guava:guava:28.0-jre from com.smxemail:com.smxemail.rangeresolver:1.1.22;
+locked com.google.truth:truth:0.45 from com.smxemail:com.smxemail.rangeresolver:1.1.22;
 locked com.smxemail.tiles:com.smxemail.tiles.enforcements:3.1.98 from smx3:smx3.bill-of-materials:3.0.14.2;
 locked com.smxemail.tiles:com.smxemail.tiles.release:2.1.63 from smx3:smx3.bill-of-materials:3.0.14.2;
 locked com.smxemail:com.smxemail.errorprone.checks:1.0.21 from smx3:smx3.bill-of-materials:3.0.14.2;
