@@ -88,7 +88,16 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.9.9"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.10.0.pr1"
+
+  Scenario: Resolution of smx3.archiving should damn well work
+    Given the following script:
+      """
+      repository http://nexus.smxemail.com/nexus/content/repositories/releases/;
+      resolve highest smx3:smx3.archiving:[5.0.3,8.0.0);
+      """
+    When resolving with aether
+    Then the resolution of "smx3:smx3.archiving" should be "7.2.2"
 
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
