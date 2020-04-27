@@ -4,7 +4,7 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.1.24</version>
+  <version>1.1.25-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
@@ -16,7 +16,6 @@
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <dependency.check.fastfail>false</dependency.check.fastfail>
     <errorProneNullAwayLevel>ERROR</errorProneNullAwayLevel>
-    <project.build.outputTimestamp>2020-04-27T23:10:50Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
