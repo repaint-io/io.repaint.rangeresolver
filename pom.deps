@@ -2,33 +2,39 @@
 repository http://nexus.smxemail.com/nexus/content/repositories/releases/;
 repository http://nexus.smxemail.com/nexus/content/groups/public/ as public;
 
-import smx3:smx3.bill-of-materials:3.0.16-SNAPSHOT;
+import smx3:smx3.bill-of-materials:3.2.3;
 
 allow unlocked /^.*smx.*$/;
 
-resolve highest com.google.truth:truth:[1.0,2.0) via public;
+resolve highest com.google.truth:truth:[1.0.1,2.0) via public;
 resolve highest io.vavr:vavr:[1.0.0-alpha-3,2.0.0) via public;
+resolve highest io.cucumber:cucumber-java:[6.0.0-RC1,6.0.0) via public;
+resolve highest io.cucumber:cucumber-junit:[6.0.0-RC1,6.0.0) via public;
 
-override highest com.google.guava:guava:[28.0-jre,30.0) via public filtering /^.*(SNAPSHOT).*$/;
+override highest com.google.guava:guava:[29.0-jre,30.0) via public filtering /^.*(SNAPSHOT).*$/;
 
 alias org.immutables:value as immutables.value.version;
 alias com.github.spullara.mustache.java:compiler as mustache.compiler.version;
 
 locked com.github.sviperll:adt4j:3.2 from smx3:smx3.bill-of-materials:2.1.1;
 locked com.google.auto.value:auto-value:1.5.2 from smx3:smx3.bill-of-materials:2.1.1;
-locked com.google.guava:guava:28.0-jre from com.smxemail:com.smxemail.rangeresolver:1.1.23;
-locked com.google.truth:truth:1.0 from com.smxemail:com.smxemail.rangeresolver:1.1.23;
-locked com.smxemail.tiles:com.smxemail.tiles.enforcements:3.1.105 from smx3:smx3.bill-of-materials:3.0.16;
-locked com.smxemail.tiles:com.smxemail.tiles.release:2.1.68 from smx3:smx3.bill-of-materials:3.0.15;
-locked com.smxemail:com.smxemail.errorprone.checks:1.0.21 from smx3:smx3.bill-of-materials:3.0.14.2;
+locked com.google.guava:failureaccess:1.0.1 from smx3:smx3.upstream.bill-of-materials:1.0.46;
+locked com.google.guava:guava:29.0-jre from com.smxemail:com.smxemail.rangeresolver:1.1.24;
+locked com.google.truth:truth:1.0.1 from com.smxemail:com.smxemail.rangeresolver:1.1.24;
+locked com.smxemail.tiles:com.smxemail.tiles.enforcements:3.2.24 from smx3:smx3.bill-of-materials:3.2.1;
+locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.3 from smx3:smx3.bill-of-materials:3.1.30;
+locked com.smxemail:com.smxemail.errorprone.checks:1.0.24 from smx3:smx3.bill-of-materials:3.1.30;
 locked com.theoryinpractise:quickcheckng:1.1.4 from smx3:smx3.bill-of-materials:2.1.1;
-locked io.repaint.maven:tiles-maven-plugin:2.15 from smx3:smx3.upstream.bill-of-materials:1.0.46;
+locked io.cucumber:cucumber-java:6.0.0-RC1 from com.smxemail:com.smxemail.rangeresolver:1.1.24;
+locked io.cucumber:cucumber-junit:6.0.0-RC1 from com.smxemail:com.smxemail.rangeresolver:1.1.24;
+locked io.repaint.maven:tiles-maven-plugin:2.16 from smx3:smx3.upstream.bill-of-materials:1.1.39;
 locked io.vavr:vavr:1.0.0-alpha-3 from com.smxemail:com.smxemail.rangeresolver:1.1.23;
-locked org.antlr:antlr4-maven-plugin:4.7.2 from smx3:smx3.upstream.bill-of-materials:1.0.34;
-locked org.antlr:antlr4-runtime:4.7.2 from smx3:smx3.upstream.bill-of-materials:1.0.34;
-locked org.apache.maven.plugins:maven-jar-plugin:3.1.2 from smx3:smx3.upstream.bill-of-materials:1.0.44;
+locked org.antlr:antlr4-maven-plugin:4.8-1 from smx3:smx3.upstream.bill-of-materials:1.1.44;
+locked org.antlr:antlr4-runtime:4.8-1 from smx3:smx3.upstream.bill-of-materials:1.1.45;
+locked org.apache.maven.plugins:maven-jar-plugin:3.2.0 from smx3:smx3.upstream.bill-of-materials:1.1.34;
+locked org.apache.maven.plugins:maven-source-plugin:3.2.1 from smx3:smx3.upstream.bill-of-materials:1.1.44;
 locked org.apache.maven:maven-artifact:3.5.2 from smx3:smx3.bill-of-materials:2.1.1;
 locked org.bitbucket.cowwoc:diff-match-patch:1.2 from smx3:smx3.upstream.testing.bill-of-materials:1.0.6;
-locked org.immutables:value:2.7.5 from smx3:smx3.upstream.bill-of-materials:1.0.36;
-locked org.jacoco:jacoco-maven-plugin:0.8.4 from smx3:smx3.upstream.testing.bill-of-materials:1.0.19;
-locked org.jetbrains:annotations:16.0.3 from smx3:smx3.upstream.bill-of-materials:1.0.26;
+locked org.immutables:value:2.8.3 from smx3:smx3.upstream.bill-of-materials:1.1.42;
+locked org.jacoco:jacoco-maven-plugin:0.8.5 from smx3:smx3.upstream.testing.bill-of-materials:1.0.31;
+locked org.jetbrains:annotations:17.0.0 from smx3:smx3.upstream.bill-of-materials:1.1.27;
