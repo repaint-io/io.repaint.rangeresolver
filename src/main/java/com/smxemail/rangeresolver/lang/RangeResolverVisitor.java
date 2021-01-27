@@ -30,6 +30,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static com.smxemail.rangeresolver.api.Allowable.SNAPSHOTS;
 import static com.smxemail.rangeresolver.api.ResolveType.BLACKLIST;
 import static com.smxemail.rangeresolver.api.ResolveType.DEPRECATE;
 import static com.smxemail.rangeresolver.api.ResolveType.OVERRIDE;
@@ -64,6 +65,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   public RangeResolver visitResolver(RangeResolverParser.ResolverContext ctx) {
 
     Set<Allow> allowables = mapList(ctx.allow(), this::resolveAllow).toSortedSet();
+    Set<Allow> withhelds = mapList(ctx.withhold(), this::resolveWithheld).toSortedSet();
 
     if (!"".equals(allowUnlocked)) {
       allowables =
@@ -71,11 +73,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     }
     if (!"".equals(allowSnapshots)) {
       allowables =
-          allowables.add(Allow.of("", Allowable.SNAPSHOTS, Pattern.compile(allowSnapshots), false));
+          allowables.add(Allow.of("", SNAPSHOTS, Pattern.compile(allowSnapshots), false));
     }
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
-    List<Import> imports = mapList(ctx.imported(), resolveImport(allowables));
+    List<Import> imports = mapList(ctx.imported(), resolveImport(allowables, withhelds));
     List<Resolve> blacklists = mapList(ctx.blacklist(), this::resolveBlacklists);
     List<Resolve> deprecations = mapList(ctx.deprecate(), this::resolveDeprecations);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
@@ -117,6 +119,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         repositoryMap,
         imports,
         allowables,
+        withhelds,
         allResolves,
         aliases,
         resolveds,
@@ -129,6 +132,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     Pattern pattern = compileRegexLiteral(rep.REGEX_VALUE().getText());
     Allowable allowable = Allowable.valueOf(rep.ALLOWABLE().getText().toUpperCase());
     return Allow.of(comments(rep.comment()), allowable, pattern, true);
+  }
+
+  private Allow resolveWithheld(RangeResolverParser.WithholdContext rep) {
+    Pattern pattern = compileRegexLiteral(rep.REGEX_VALUE().getText());
+    return Allow.of(comments(rep.comment()), SNAPSHOTS, pattern, true);
   }
 
   private boolean hasDuplicates(List<?> list) {
@@ -217,9 +225,9 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.RESOLVED);
   }
 
-  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows) {
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows, Set<Allow> withhelds) {
     TreeSet<Pattern> emptyPattens =
-        TreeSet.of(Comparator.<Pattern, String>comparing(p -> p.toString()));
+        TreeSet.of(Comparator.comparing(p -> p.toString()));
 
     Set<Pattern> unlocked =
         allows
@@ -228,7 +236,12 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     Set<Pattern> snapshots =
         allows
-            .filter(allow -> allow.allowable() == Allowable.SNAPSHOTS)
+            .filter(allow -> allow.allowable() == SNAPSHOTS)
+            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+
+    Set<Pattern> withheld =
+        withhelds
+            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
             .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     return importContext ->
@@ -238,7 +251,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
             importContext.resolvedArtifact().artifactId().getText(),
             importContext.resolvedArtifact().version().getText(),
             snapshots,
-            unlocked);
+            unlocked,
+            withheld);
   }
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext resolve) {

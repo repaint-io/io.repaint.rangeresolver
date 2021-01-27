@@ -18,6 +18,9 @@ public abstract class AbstractRangeResolver {
   public abstract Set<Allow> allows();
 
   @Value.Parameter
+  public abstract Set<Allow> withheld();
+
+  @Value.Parameter
   public abstract List<Resolve> resolves();
 
   @Value.Parameter
