@@ -26,6 +26,9 @@ public abstract class AbstractImport {
   @Value.Parameter
   public abstract Set<Pattern> unlocked();
 
+  @Value.Parameter
+  public abstract Set<Pattern> withheld();
+
   @Value.Derived
   public String key() {
     return String.format("%s:%s", group(), artifact());

@@ -341,7 +341,9 @@ public class RepositoryResolver {
   }
 
   private Predicate<Resolve> matchesAllowOrOverride(RangeResolver rangeResolver) {
-    Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver));
+    Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver)).and(
+        matchesAny(withheldPatterns(rangeResolver)).negate());
+
     List<String> overrideKeys =
         rangeResolver
             .resolves()
@@ -397,6 +399,13 @@ public class RepositoryResolver {
     return rangeResolver
         .allows()
         .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+  }
+
+  public static Set<Pattern> withheldPatterns(RangeResolver rangeResolver) {
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
+    return rangeResolver
+        .withheld()
+        .foldLeft(emptyPattens, (patterns, withheld) -> patterns.add(withheld.pattern()));
   }
 
   private RangeResolver parseImport(

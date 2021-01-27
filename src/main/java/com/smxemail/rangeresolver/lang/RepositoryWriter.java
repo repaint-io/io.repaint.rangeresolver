@@ -57,6 +57,17 @@ public class RepositoryWriter {
         }
       }
 
+      if (!rangeResolver.withheld().isEmpty()) {
+        pw.println();
+
+        for (Allow allow : rangeResolver.withheld()) {
+          if (allow.persistent()) {
+            printComments(pw, allow.comments());
+            pw.printf("withhold /%s/;\n", allow.pattern());
+          }
+        }
+      }
+
       printResolution(pw, "blacklist", ResolveType.BLACKLIST.from(rangeResolver));
       printResolution(pw, "deprecate", ResolveType.DEPRECATE.from(rangeResolver));
       printResolution(pw, "resolve", ResolveType.RESOLVE.from(rangeResolver));
