@@ -152,13 +152,13 @@
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <version>6.9.1</version>
+      <version>6.10.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit</artifactId>
-      <version>6.9.1</version>
+      <version>6.10.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -184,8 +184,8 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.17]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.56]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.18]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.61]</tile>
           </tiles>
         </configuration>
       </plugin>
