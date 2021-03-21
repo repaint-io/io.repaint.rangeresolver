@@ -25,7 +25,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>[30.1-jre]</version>
+      <version>[30.1.1-jre]</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>org.antlr</groupId>
       <artifactId>antlr4-runtime</artifactId>
-      <version>[4.9.1]</version>
+      <version>[4.9.2]</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -58,7 +58,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>[3.11]</version>
+      <version>[3.12.0]</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -81,37 +81,37 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.6.1</version>
+      <version>3.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <version>1.6.1</version>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains</groupId>
@@ -152,13 +152,13 @@
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <version>6.10.0</version>
+      <version>6.10.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit</artifactId>
-      <version>6.10.0</version>
+      <version>6.10.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -185,14 +185,14 @@
         <configuration>
           <tiles>
             <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.18]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.61]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.66]</tile>
           </tiles>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr4-maven-plugin</artifactId>
-        <version>4.9.1</version>
+        <version>4.9.2</version>
         <executions>
           <execution>
             <goals>
