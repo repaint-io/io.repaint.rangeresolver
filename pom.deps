@@ -23,9 +23,6 @@ resolve highest org.apache.maven:maven-resolver-provider:[3.6.2,4.0.0);
 alias org.immutables:value as immutables.value.version;
 alias com.github.spullara.mustache.java:compiler as mustache.compiler.version;
 
-resolved io.cucumber:cucumber-java:6.10.2 from com.smxemail:com.smxemail.rangeresolver:1.1.28;
-resolved io.cucumber:cucumber-junit:6.10.2 from com.smxemail:com.smxemail.rangeresolver:1.1.28;
-
 locked com.github.sviperll:adt4j:3.2 from smx3:smx3.bill-of-materials:2.1.1;
 locked com.google.auto.value:auto-value:1.5.2 from smx3:smx3.bill-of-materials:2.1.1;
 locked com.google.guava:failureaccess:1.0.1 from smx3:smx3.upstream.bill-of-materials:1.0.46;
@@ -36,6 +33,8 @@ locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.18 from smx3:smx3.bill-
 locked com.smxemail:com.smxemail.datatype.annotations:1.0.2 from smx3:smx3.bill-of-materials:3.2.76;
 locked com.smxemail:com.smxemail.errorprone.checks:1.0.34 from smx3:smx3.bill-of-materials:3.2.90;
 locked com.theoryinpractise:quickcheckng:1.1.4 from smx3:smx3.bill-of-materials:2.1.1;
+locked io.cucumber:cucumber-java:6.10.2 from com.smxemail:com.smxemail.rangeresolver:1.1.28;
+locked io.cucumber:cucumber-junit:6.10.2 from com.smxemail:com.smxemail.rangeresolver:1.1.28;
 locked io.repaint.maven:tiles-maven-plugin:2.19 from smx3:smx3.upstream.bill-of-materials:1.3.24;
 locked io.vavr:vavr:1.0.0-alpha-3 from com.smxemail:com.smxemail.rangeresolver:1.1.23;
 locked org.antlr:antlr4-maven-plugin:4.9.2 from smx3:smx3.upstream.bill-of-materials:1.3.53;
