@@ -473,19 +473,26 @@ public class RepositoryResolver {
             isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
           String existingVersion = previouslyLockedResolution == null ? "[undefined]" : previouslyLockedResolution.version();
 
-          infoLogger.accept(String.format(
-              "%s %s: %s is newer than %s",
-              capitalize(resolvedType.name().toLowerCase()),
-              resolve.key(),
-              boundVersion,
-              existingVersion));
+          String resolvedSource =
+              previouslyLockedResolution != null && !isNewerVersion(boundVersion, previouslyLockedResolution.version())
+                  ? previouslyLockedResolution.resolvedFrom()
+                  : sourceReference;
+
+          if (previouslyLockedResolution != null && isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
+            infoLogger.accept(String.format(
+                "%s %s: %s is newer than %s",
+                capitalize(resolvedType.name().toLowerCase()),
+                resolve.key(),
+                boundVersion,
+                existingVersion));
+          }
 
           Resolved newlyResolved = Resolved.of(
               "",
               resolve.group(),
               resolve.artifact(),
               boundVersion,
-              sourceReference,
+              resolvedSource,
               resolve.propertyName(),
               constrainedRange,
               resolvedType);
