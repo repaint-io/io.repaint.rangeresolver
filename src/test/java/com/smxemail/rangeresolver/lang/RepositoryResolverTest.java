@@ -3,10 +3,10 @@ package com.smxemail.rangeresolver.lang;
 import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertThat;
+
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.isNewerVersion;
 
 public class RepositoryResolverTest {
-
   @Test
   public void testVersionComparision() {
     assertThat(isNewerVersion("1.0.1", "1.0.2")).isFalse();

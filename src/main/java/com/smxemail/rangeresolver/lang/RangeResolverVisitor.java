@@ -2,6 +2,11 @@ package com.smxemail.rangeresolver.lang;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+
+import io.vavr.collection.List;
+import io.vavr.collection.Set;
+import io.vavr.collection.TreeSet;
+
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
 import com.smxemail.rangeresolver.api.Alias;
@@ -17,9 +22,6 @@ import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.ResolveType;
 import com.smxemail.rangeresolver.api.Resolved;
 import com.smxemail.rangeresolver.api.ResolvedType;
-import io.vavr.collection.List;
-import io.vavr.collection.Set;
-import io.vavr.collection.TreeSet;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,10 +37,10 @@ import static com.smxemail.rangeresolver.api.ResolveType.BLACKLIST;
 import static com.smxemail.rangeresolver.api.ResolveType.DEPRECATE;
 import static com.smxemail.rangeresolver.api.ResolveType.OVERRIDE;
 import static com.smxemail.rangeresolver.api.ResolveType.RESOLVE;
+
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
-
   public static final String ARTIFACT_VERSION = "%s.version";
 
   public static final Pattern ALLOW_SNAPSHOTS = Pattern.compile("");
@@ -63,13 +65,11 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   @Override
   public RangeResolver visitResolver(RangeResolverParser.ResolverContext ctx) {
-
     Set<Allow> allowables = mapList(ctx.allow(), this::resolveAllow).toSortedSet();
     Set<Allow> withhelds = mapList(ctx.withhold(), this::resolveWithheld).toSortedSet();
 
     if (!"".equals(allowUnlocked)) {
-      allowables =
-          allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked), false));
+      allowables = allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked), false));
     }
     if (!"".equals(allowSnapshots)) {
       allowables = allowables.add(Allow.of("", SNAPSHOTS, Pattern.compile(allowSnapshots), false));
@@ -81,12 +81,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolve> deprecations = mapList(ctx.deprecate(), this::resolveDeprecations);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
-    List<Resolve> allResolves =
-        blacklists.appendAll(deprecations).appendAll(resolves).appendAll(overrides);
+    List<Resolve> allResolves = blacklists.appendAll(deprecations).appendAll(resolves).appendAll(overrides);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
-    Multimap<String, Repository> repositoryMap =
-        Multimaps.index(repositories, Repository::grouping);
+    Multimap<String, Repository> repositoryMap = Multimaps.index(repositories, Repository::grouping);
 
     if (hasDuplicates(imports)) {
       throw new IllegalStateException("Duplicate import declaration found in " + sourceReference);
@@ -105,26 +103,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     effectivePropertyNames.putAll(propertyNames);
     effectivePropertyNames.putAll(aliasNames);
 
-    List<Resolved> resolveds =
-        mapList(ctx.resolved(), res -> resolveResolved(effectivePropertyNames, res));
-    List<Resolved> locked =
-        mapList(ctx.locked(), res -> resolveLocked(effectivePropertyNames, res));
-    List<Resolved> deprecateds =
-        mapList(ctx.deprecated(), res -> resolveDeprecated(effectivePropertyNames, res));
-    List<Resolved> blacklisted =
-        mapList(ctx.blacklisted(), res -> resolveBlacklisted(effectivePropertyNames, res));
+    List<Resolved> resolveds = mapList(ctx.resolved(), res -> resolveResolved(effectivePropertyNames, res));
+    List<Resolved> locked = mapList(ctx.locked(), res -> resolveLocked(effectivePropertyNames, res));
+    List<Resolved> deprecateds = mapList(ctx.deprecated(), res -> resolveDeprecated(effectivePropertyNames, res));
+    List<Resolved> blacklisted = mapList(ctx.blacklisted(), res -> resolveBlacklisted(effectivePropertyNames, res));
 
     return RangeResolver.of(
-        repositoryMap,
-        imports,
-        allowables,
-        withhelds,
-        allResolves,
-        aliases,
-        resolveds,
-        deprecateds,
-        blacklisted,
-        locked);
+        repositoryMap, imports, allowables, withhelds, allResolves, aliases, resolveds, deprecateds, blacklisted, locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -143,7 +128,6 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
-
     String grouping = "default";
     if (rep.respositoryGrouping() != null) {
       grouping = rep.respositoryGrouping().value().getText();
@@ -152,8 +136,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
   }
 
-  private Resolved resolveLocked(
-      Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
+  private Resolved resolveLocked(Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
@@ -169,8 +152,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.LOCKED);
   }
 
-  private Resolved resolveDeprecated(
-      Map<String, String> propertyNames, RangeResolverParser.DeprecatedContext res) {
+  private Resolved resolveDeprecated(Map<String, String> propertyNames, RangeResolverParser.DeprecatedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
@@ -186,8 +168,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.DEPRECATED);
   }
 
-  private Resolved resolveBlacklisted(
-      Map<String, String> propertyNames, RangeResolverParser.BlacklistedContext res) {
+  private Resolved resolveBlacklisted(Map<String, String> propertyNames, RangeResolverParser.BlacklistedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
@@ -203,15 +184,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.BLACKLISTED);
   }
 
-  private Resolved resolveResolved(
-      Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
+  private Resolved resolveResolved(Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
-    String key =
-        String.format(
-            "%s:%s",
-            res.resolvedArtifact().group().getText(),
-            res.resolvedArtifact().artifactId().getText());
+    String key = String.format("%s:%s", res.resolvedArtifact().group().getText(), res.resolvedArtifact().artifactId().getText());
     String version = res.resolvedArtifact().version().getText();
     return Resolved.of(
         comments(res.comment()),
@@ -224,27 +200,20 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.RESOLVED);
   }
 
-  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(
-      Set<Allow> allows, Set<Allow> withhelds) {
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows, Set<Allow> withhelds) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(p -> p.toString()));
 
-    Set<Pattern> unlocked =
-        allows
-            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    Set<Pattern> unlocked = allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+                                .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
-    Set<Pattern> snapshots =
-        allows
-            .filter(allow -> allow.allowable() == SNAPSHOTS)
-            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    Set<Pattern> snapshots = allows.filter(allow -> allow.allowable() == SNAPSHOTS)
+                                 .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
-    Set<Pattern> withheld =
-        withhelds
-            .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-            .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    Set<Pattern> withheld = withhelds.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+                                .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
-    return importContext ->
-        Import.of(
+    return importContext
+        -> Import.of(
             comments(importContext.comment()),
             importContext.resolvedArtifact().group().getText(),
             importContext.resolvedArtifact().artifactId().getText(),
@@ -297,8 +266,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         grouping);
   }
 
-  private Pattern resolveFilteringPattern(
-      RangeResolverParser.FilteringContext filtering, Bound bound) {
+  private Pattern resolveFilteringPattern(RangeResolverParser.FilteringContext filtering, Bound bound) {
     Pattern filteringRegex;
 
     if (filtering == null) {
@@ -315,10 +283,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Alias resolveAlias(RangeResolverParser.AliasContext res) {
     return Alias.of(
-        comments(res.comment()),
-        res.artifact().group().getText(),
-        res.artifact().artifactId().getText(),
-        alias(res.aliasValue()));
+        comments(res.comment()), res.artifact().group().getText(), res.artifact().artifactId().getText(), alias(res.aliasValue()));
   }
 
   private Range range(RangeResolverParser.RangeContext context) {

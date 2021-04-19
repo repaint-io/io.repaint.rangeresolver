@@ -1,5 +1,7 @@
 package com.smxemail.rangeresolver.lang;
 
+import io.vavr.collection.List;
+
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Allow;
 import com.smxemail.rangeresolver.api.Bound;
@@ -9,21 +11,18 @@ import com.smxemail.rangeresolver.api.Repository;
 import com.smxemail.rangeresolver.api.Resolve;
 import com.smxemail.rangeresolver.api.ResolveType;
 import com.smxemail.rangeresolver.api.Resolved;
-import io.vavr.collection.List;
 
 import java.io.PrintWriter;
 import java.io.Writer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
 public class RepositoryWriter {
-
   public static void writeRangeResolveSource(RangeResolver rangeResolver, Writer writer) {
-
     try (PrintWriter pw = new PrintWriter(writer)) {
-
       if (!rangeResolver.repositories().isEmpty()) {
         for (Repository repository : rangeResolver.repositories().values()) {
           String comments = repository.comments();
@@ -41,8 +40,7 @@ public class RepositoryWriter {
 
         for (Import imported : rangeResolver.imports()) {
           printComments(pw, imported.comments());
-          pw.printf(
-              "import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
+          pw.printf("import %s:%s:%s;\n", imported.group(), imported.artifact(), imported.version());
         }
       }
 
@@ -96,11 +94,7 @@ public class RepositoryWriter {
       for (Resolved resolved : resolveds) {
         printComments(pw, resolved.comments());
         pw.printf(
-            command + " %s:%s:%s from %s;\n",
-            resolved.group(),
-            resolved.artifact(),
-            resolved.version(),
-            resolved.resolvedFrom());
+            command + " %s:%s:%s from %s;\n", resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
       }
     }
   }
@@ -110,7 +104,6 @@ public class RepositoryWriter {
       pw.println();
 
       for (Resolve resolve : resolves) {
-
         String boundSpec = resolve.bounds().toString().toLowerCase();
         String versionRange = resolve.range().asVersionRange();
         String gav = String.format("%s:%s:%s", resolve.group(), resolve.artifact(), versionRange);
@@ -122,9 +115,8 @@ public class RepositoryWriter {
           pw.printf(" via %s", resolve.grouping());
         }
 
-        if (resolve.bounds() != Bound.SNAPSHOT
-            && resolve.filtering() != ALLOW_SNAPSHOTS
-            && resolve.filtering() != FILTER_SNAPSHOTS) {
+        if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering() != ALLOW_SNAPSHOTS &&
+            resolve.filtering() != FILTER_SNAPSHOTS) {
           pw.printf(" filtering /%s/", resolve.filtering());
         }
         pw.printf(";\n");

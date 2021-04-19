@@ -13,7 +13,6 @@ import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ARTIFACT_VERS
 
 @Value.Immutable
 public abstract class AbstractResolve implements PropertyBased {
-
   @Value.Parameter
   public abstract String comments();
 
