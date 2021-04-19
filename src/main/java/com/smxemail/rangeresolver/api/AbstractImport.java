@@ -1,13 +1,13 @@
 package com.smxemail.rangeresolver.api;
 
 import io.vavr.collection.Set;
+
 import org.immutables.value.Value;
 
 import java.util.regex.Pattern;
 
 @Value.Immutable
 public abstract class AbstractImport {
-
   @Value.Parameter
   public abstract String comments();
 

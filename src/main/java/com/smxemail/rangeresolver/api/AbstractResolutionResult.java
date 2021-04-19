@@ -1,11 +1,11 @@
 package com.smxemail.rangeresolver.api;
 
 import io.vavr.collection.List;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class AbstractResolutionResult {
-
   @Value.Parameter
   public abstract List<Alias> aliases();
 

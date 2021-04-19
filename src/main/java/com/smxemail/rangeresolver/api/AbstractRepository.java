@@ -4,7 +4,6 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class AbstractRepository {
-
   @Value.Parameter
   public abstract String comments();
 

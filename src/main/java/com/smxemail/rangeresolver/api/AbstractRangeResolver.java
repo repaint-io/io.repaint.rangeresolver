@@ -1,13 +1,14 @@
 package com.smxemail.rangeresolver.api;
 
 import com.google.common.collect.Multimap;
+
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class AbstractRangeResolver {
-
   @Value.Parameter
   public abstract Multimap<String, Repository> repositories();
 

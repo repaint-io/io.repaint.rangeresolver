@@ -1,22 +1,11 @@
 package com.smxemail.rangeresolver.lang;
 
-import com.smxemail.rangeresolver.api.AbstractRepository;
-import com.smxemail.rangeresolver.api.AbstractResolve;
-import com.smxemail.rangeresolver.api.Bound;
-import com.smxemail.rangeresolver.api.Import;
-import com.smxemail.rangeresolver.api.Range;
-import com.smxemail.rangeresolver.api.RangeResolver;
-import com.smxemail.rangeresolver.api.Repository;
-import com.smxemail.rangeresolver.api.ResolutionResult;
-import com.smxemail.rangeresolver.api.Resolve;
-import com.smxemail.rangeresolver.api.ResolveType;
-import com.smxemail.rangeresolver.api.Resolved;
-import com.smxemail.rangeresolver.api.ResolvedType;
 import io.vavr.collection.HashSet;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
 import io.vavr.control.Option;
+
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -44,8 +33,20 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.smxemail.rangeresolver.api.AbstractRepository;
+import com.smxemail.rangeresolver.api.AbstractResolve;
+import com.smxemail.rangeresolver.api.Bound;
+import com.smxemail.rangeresolver.api.Import;
+import com.smxemail.rangeresolver.api.Range;
+import com.smxemail.rangeresolver.api.RangeResolver;
+import com.smxemail.rangeresolver.api.Repository;
+import com.smxemail.rangeresolver.api.ResolutionResult;
+import com.smxemail.rangeresolver.api.Resolve;
+import com.smxemail.rangeresolver.api.ResolveType;
+import com.smxemail.rangeresolver.api.Resolved;
+import com.smxemail.rangeresolver.api.ResolvedType;
 
 import java.io.File;
 import java.io.FileReader;
@@ -62,17 +63,19 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Strings.emptyToNull;
+
+import static io.vavr.API.List;
+import static io.vavr.control.Option.none;
+import static io.vavr.control.Option.some;
+
 import static com.smxemail.rangeresolver.lang.Memoizer.memo;
 import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
-import static io.vavr.API.List;
-import static io.vavr.control.Option.none;
-import static io.vavr.control.Option.some;
+
 import static java.util.stream.Collectors.toList;
 
 public class RepositoryResolver {
-
   public static final String BILL_OF_MATERIALS = "bill-of-materials";
 
   public static final String DEPS = "deps";
@@ -108,8 +111,7 @@ public class RepositoryResolver {
       String allowUnlocked,
       String allowSnapshots,
       boolean updateSnapshots) {
-    return new RepositoryResolver(
-        infoLogger, warningLogger, localRepoDir, allowUnlocked, allowSnapshots, updateSnapshots);
+    return new RepositoryResolver(infoLogger, warningLogger, localRepoDir, allowUnlocked, allowSnapshots, updateSnapshots);
   }
 
   private static RepositorySystem newRepositorySystem() {
@@ -123,8 +125,7 @@ public class RepositoryResolver {
   public RepositorySystemSession newRepositorySystemSession() {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     LocalRepository localRepo = new LocalRepository(localRepoDir);
-    session.setLocalRepositoryManager(
-        repositorySystem.newLocalRepositoryManager(session, localRepo));
+    session.setLocalRepositoryManager(repositorySystem.newLocalRepositoryManager(session, localRepo));
     return session;
   }
 
@@ -135,16 +136,14 @@ public class RepositoryResolver {
    * @return A list of resolved artifacts
    * @throws RepositoryException
    */
-  public ResolutionResult resolveRanges(
-      RangeResolver rangeResolver, String resolverReference, String sourceReference) {
+  public ResolutionResult resolveRanges(RangeResolver rangeResolver, String resolverReference, String sourceReference) {
     RepositorySystemSession session = newRepositorySystemSession();
 
     List<RemoteRepository> repositories = buildeRepositories(rangeResolver.repositories().values());
 
     repositorySystem.newResolutionRepositories(session, repositories.toJavaList());
 
-    List<RangeResolver> importedResolvers =
-        parseImports(rangeResolver, sourceReference, session, repositories);
+    List<RangeResolver> importedResolvers = parseImports(rangeResolver, sourceReference, session, repositories);
 
     Map<String, Resolved> importedArtifacts =
         importedResolvers.flatMap(this::streamResolvedArtifacts).collect(Resolved.collectByKey);
@@ -158,85 +157,59 @@ public class RepositoryResolver {
     Map<String, Resolve> overridesFromLocal = overRiddenResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> deprecatesFromLocal = deprecatedResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> blacklistsFromLocal = blacklistedResolves.collect(Resolve.collectByKey);
-
-    Map<String, Resolved> lockedFromLocal =
-        rangeResolver
-            .locked()
-            .filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key()))
-            .collect(Resolved.collectByKey);
+    Map<String, Resolved> lockedFromLocal = collectAllLockedVersions(rangeResolver, overRiddenResolves);
+    Map<String, Resolved> resolvedFromLocalForVersionChecking = collectAllResolvedVersions(rangeResolver);
 
     List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
 
-    checkForDuplicateResolutions(
-        imported, resolvesFromLocal, blacklistsFromLocal, deprecatesFromLocal);
+    checkForDuplicateResolutions(imported, resolvesFromLocal, blacklistsFromLocal, deprecatesFromLocal);
 
     Predicate<Resolve> isUpdatedAllowed = matchesAllowOrOverride(rangeResolver);
 
     infoLogger.accept("Resolving metadata for " + resolverReference);
-    List<Resolve> toResolve =
-        imported
-            .filter(isUpdatedAllowed.and(r -> !overridesFromLocal.keySet().contains(r.key())))
-            .appendAll(rangeResolver.resolves());
+    List<Resolve> toResolve = imported.filter(isUpdatedAllowed.and(r -> !overridesFromLocal.keySet().contains(r.key())))
+                                  .appendAll(rangeResolver.resolves());
 
     resolveArtifacts(session, toResolve);
 
     Function<Resolve, List<RemoteRepository>> buildRepositories =
         memo(resolve -> buildeRepositories(rangeResolver.repositories().get(resolve.grouping())));
 
-    Function<Resolve, Option<Resolved>> resolveArtifact =
-        memo(
-            resolve ->
-                resolveArtifact(
-                    lockedFromLocal,
-                    resolverReference,
-                    session,
-                    buildRepositories.apply(resolve),
-                    resolve));
+    Function<Resolve, Option<Resolved>> resolveArtifact = memo(
+        resolve
+        -> resolveArtifact(
+            resolvedFromLocalForVersionChecking, resolverReference, session, buildRepositories.apply(resolve), resolve));
 
     Predicate<Resolve> isLocallyDeclared = isLocallyDeclared(resolvesFromLocal, overridesFromLocal);
 
-    Predicate<Resolve> isLocallyDeprecated =
-        resolve -> deprecatesFromLocal.containsKey(resolve.key());
+    Predicate<Resolve> isLocallyDeprecated = resolve -> deprecatesFromLocal.containsKey(resolve.key());
 
-    Predicate<Resolve> isLocallyBlacklisted =
-        resolve -> blacklistsFromLocal.containsKey(resolve.key());
+    Predicate<Resolve> isLocallyBlacklisted = resolve -> blacklistsFromLocal.containsKey(resolve.key());
 
-    Predicate<Resolve> isUpdatedVersion =
-        resolve ->
-            resolveArtifact
-                .apply(resolve)
-                .map(
-                    resolved ->
-                        isNewerVersion(resolved, importedArtifacts.get(resolve.key()))
-                            && isNewerVersion(resolved, lockedFromLocal.get(resolve.key())))
-                .getOrElse(false);
+    Predicate<Resolve> isUpdatedVersion = resolve
+        -> resolveArtifact.apply(resolve)
+               .map(
+                   resolved
+                   -> isNewerVersion(resolved, importedArtifacts.get(resolve.key())) &&
+                          isNewerVersion(resolved, resolvedFromLocalForVersionChecking.get(resolve.key())))
+               .getOrElse(false);
 
     Predicate<Resolve> isResolvable = isUpdatedAllowed.and(isUpdatedVersion).or(isLocallyDeclared);
 
-    Map<String, Resolved> resolvedThings =
-        toResolve
-            .filter(isResolvable)
-            .filter(r -> !deprecatedKeysFromLocal.contains(r.key()))
-            .flatMap(resolveArtifact)
-            .collect(Resolved.collectByKey);
+    Map<String, Resolved> resolvedThings = toResolve.filter(isResolvable)
+                                               .filter(r -> !deprecatedKeysFromLocal.contains(r.key()))
+                                               .flatMap(resolveArtifact)
+                                               .collect(Resolved.collectByKey);
 
-    Map<String, Resolved> importedBlacklists =
-        filterImported(importedArtifacts, ResolvedType.BLACKLISTED);
+    Map<String, Resolved> importedBlacklists = filterImported(importedArtifacts, ResolvedType.BLACKLISTED);
 
-    Map<String, Resolved> importedDeprecations =
-        filterImported(importedArtifacts, ResolvedType.DEPRECATED);
+    Map<String, Resolved> importedDeprecations = filterImported(importedArtifacts, ResolvedType.DEPRECATED);
 
     Map<String, Resolved> localDeprecations =
-        toResolve
-            .filter(isLocallyDeprecated)
-            .flatMap(resolveArtifact)
-            .collect(Resolved.collectByKey);
+        toResolve.filter(isLocallyDeprecated).flatMap(resolveArtifact).collect(Resolved.collectByKey);
 
     Map<String, Resolved> localBlacklists =
-        toResolve
-            .filter(isLocallyBlacklisted)
-            .flatMap(resolveArtifact)
-            .collect(Resolved.collectByKey);
+        toResolve.filter(isLocallyBlacklisted).flatMap(resolveArtifact).collect(Resolved.collectByKey);
 
     Map<String, Resolved> deprecatedThings = mergeMaps(importedDeprecations, localDeprecations);
     Map<String, Resolved> blacklistedThings = mergeMaps(importedBlacklists, localBlacklists);
@@ -244,14 +217,8 @@ public class RepositoryResolver {
     List<Resolved> sortedUniqueResolved = sortResolvedThings(resolvedThings.values());
     List<Resolved> sortedUniqueDeprecated = sortResolvedThings(deprecatedThings.values());
     List<Resolved> sortedUniqueBlacklisted = sortResolvedThings(blacklistedThings.values());
-    List<Resolved> sortedUniqueLocked =
-        resolveSortedUniqueLocked(
-            importedArtifacts,
-            lockedFromLocal,
-            resolvedThings,
-            blacklistedThings,
-            deprecatedThings,
-            sortedUniqueResolved);
+    List<Resolved> sortedUniqueLocked = resolveSortedUniqueLocked(
+        importedArtifacts, lockedFromLocal, resolvedThings, blacklistedThings, deprecatedThings, sortedUniqueResolved);
 
     return ResolutionResult.of(
         rangeResolver.aliases(),
@@ -262,19 +229,29 @@ public class RepositoryResolver {
         sortedUniqueLocked);
   }
 
-  private <K,V> Map<K, V> mergeMaps(
-      Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
+  private Map<String, Resolved> collectAllLockedVersions(RangeResolver rangeResolver, List<Resolve> overRiddenResolves) {
+    Map<String, Resolved> lockedFromLocal =
+        rangeResolver.locked().filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key())).collect(Resolved.collectByKey);
+    return lockedFromLocal;
+  }
+
+  private Map<String, Resolved> collectAllResolvedVersions(RangeResolver rangeResolver) {
+    Map<String, Resolved> resolvedFromLocalForVersionChecking = rangeResolver.blacklisted()
+                                                                    .appendAll(rangeResolver.locked())
+                                                                    .appendAll(rangeResolver.deprecated())
+                                                                    .collect(Resolved.collectByKey);
+    return resolvedFromLocalForVersionChecking;
+  }
+
+  private <K, V> Map<K, V> mergeMaps(Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
     Map<K, V> deprecatedThings = new HashMap<>();
     deprecatedThings.putAll(importedDeprecations);
     deprecatedThings.putAll(localDeprecations);
     return deprecatedThings;
   }
 
-  private Map<String, Resolved> filterImported(
-      Map<String, Resolved> importedArtifacts, ResolvedType blacklisted) {
-    return io.vavr.collection.HashMap.ofAll(importedArtifacts)
-        .filterValues(res -> res.resolutionType() == blacklisted)
-        .toJavaMap();
+  private Map<String, Resolved> filterImported(Map<String, Resolved> importedArtifacts, ResolvedType blacklisted) {
+    return io.vavr.collection.HashMap.ofAll(importedArtifacts).filterValues(res -> res.resolutionType() == blacklisted).toJavaMap();
   }
 
   private List<Resolved> resolveSortedUniqueLocked(
@@ -292,24 +269,19 @@ public class RepositoryResolver {
       }
     }
 
-    List<Resolved> sortedUniqueLocked =
-        sortResolvedThings(
-            localArtifacts.values().stream()
-                .filter(r -> !blackedListedThings.containsKey(r.key()))
-                .filter(r -> !deprecatedThings.containsKey(r.key()))
-                .filter(r -> !resolvedThings.containsKey(r.key()))
-                .collect(toList()));
+    List<Resolved> sortedUniqueLocked = sortResolvedThings(localArtifacts.values()
+                                                               .stream()
+                                                               .filter(r -> !blackedListedThings.containsKey(r.key()))
+                                                               .filter(r -> !deprecatedThings.containsKey(r.key()))
+                                                               .filter(r -> !resolvedThings.containsKey(r.key()))
+                                                               .collect(toList()));
 
     warnAboutResolutionConflicts(sortedUniqueResolved);
     return sortedUniqueLocked;
   }
 
-  @NotNull
-  private Predicate<Resolve> isLocallyDeclared(
-      Map<String, Resolve> resolvesFromLocal, Map<String, Resolve> overridesFromLocal) {
-    return resolve ->
-        resolvesFromLocal.containsKey(resolve.key())
-            || overridesFromLocal.containsKey(resolve.key());
+  private Predicate<Resolve> isLocallyDeclared(Map<String, Resolve> resolvesFromLocal, Map<String, Resolve> overridesFromLocal) {
+    return resolve -> resolvesFromLocal.containsKey(resolve.key()) || overridesFromLocal.containsKey(resolve.key());
   }
 
   private void resolveArtifacts(RepositorySystemSession session, List<Resolve> toResolve) {
@@ -319,44 +291,30 @@ public class RepositoryResolver {
   }
 
   private void checkForDuplicateResolutions(
-      List<Resolve> imported,
-      Map<String, Resolve> resolvesFromLocal,
-      Map<String, Resolve>... resolutions) {
-
+      List<Resolve> imported, Map<String, Resolve> resolvesFromLocal, Map<String, Resolve>... resolutions) {
     for (Map<String, Resolve> resolveMap : resolutions) {
       // Check for duplicate resolves
-      List<Resolve> importedMinusLocal =
-          imported.filter(r -> resolvesFromLocal.keySet().contains(r.key()));
+      List<Resolve> importedMinusLocal = imported.filter(r -> resolvesFromLocal.keySet().contains(r.key()));
 
-      List<String> duplicateResolutions =
-          importedMinusLocal.filter(r -> resolveMap.keySet().contains(r.key())).map(Resolve::key);
+      List<String> duplicateResolutions = importedMinusLocal.filter(r -> resolveMap.keySet().contains(r.key())).map(Resolve::key);
 
       if (!duplicateResolutions.isEmpty()) {
         throw new IllegalStateException(
-            String.format(
-                "pom.deps contains duplicate resolution declarations for: %s",
-                duplicateResolutions.mkString(", ")));
+            String.format("pom.deps contains duplicate resolution declarations for: %s", duplicateResolutions.mkString(", ")));
       }
     }
   }
 
   private Predicate<Resolve> matchesAllowOrOverride(RangeResolver rangeResolver) {
-    Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver)).and(
-        matchesAny(withheldPatterns(rangeResolver)).negate());
+    Predicate<String> predicate =
+        matchesAny(allowPatterns(rangeResolver)).and(matchesAny(withheldPatterns(rangeResolver)).negate());
 
-    List<String> overrideKeys =
-        rangeResolver
-            .resolves()
-            .filter(res -> res.resolveType() == ResolveType.OVERRIDE)
-            .map(Resolve::key);
+    List<String> overrideKeys = rangeResolver.resolves().filter(res -> res.resolveType() == ResolveType.OVERRIDE).map(Resolve::key);
     return resolve -> overrideKeys.contains(resolve.key()) || predicate.test(resolve.key());
   }
 
   private List<RangeResolver> parseImports(
-      RangeResolver rangeResolver,
-      String sourceReference,
-      RepositorySystemSession session,
-      List<RemoteRepository> repositories) {
+      RangeResolver rangeResolver, String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories) {
     return rangeResolver.imports().map(i -> parseImport(sourceReference, session, repositories, i));
   }
 
@@ -381,55 +339,42 @@ public class RepositoryResolver {
    * @param resolved A list of {@link Resolved} items.
    */
   private void warnAboutResolutionConflicts(List<Resolved> resolved) {
-    Map<String, java.util.List<Resolved>> conflicting =
-        resolved.collect(Collectors.groupingBy(Resolved::key));
+    Map<String, java.util.List<Resolved>> conflicting = resolved.collect(Collectors.groupingBy(Resolved::key));
     for (Map.Entry<String, java.util.List<Resolved>> entry : conflicting.entrySet()) {
       if (entry.getValue().size() > 1) {
-        String resolutionGavs =
-            entry.getValue().stream().map(Resolved::resolvedFrom).collect(Collectors.joining(", "));
-        warningLogger.accept(
-            String.format(
-                "Duplicate resolution of %s found in: %s", entry.getKey(), resolutionGavs));
+        String resolutionGavs = entry.getValue().stream().map(Resolved::resolvedFrom).collect(Collectors.joining(", "));
+        warningLogger.accept(String.format("Duplicate resolution of %s found in: %s", entry.getKey(), resolutionGavs));
       }
     }
   }
 
   public static Set<Pattern> allowPatterns(RangeResolver rangeResolver) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
-    return rangeResolver
-        .allows()
-        .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    return rangeResolver.allows().foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
   }
 
   public static Set<Pattern> withheldPatterns(RangeResolver rangeResolver) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
-    return rangeResolver
-        .withheld()
-        .foldLeft(emptyPattens, (patterns, withheld) -> patterns.add(withheld.pattern()));
+    return rangeResolver.withheld().foldLeft(emptyPattens, (patterns, withheld) -> patterns.add(withheld.pattern()));
   }
 
   private RangeResolver parseImport(
-      String sourceReference,
-      RepositorySystemSession session,
-      List<RemoteRepository> repositories,
-      Import i) {
-
+      String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i) {
     boolean requestSnapshots = i.version().endsWith("-SNAPSHOT");
     Bound importBound = requestSnapshots ? Bound.SNAPSHOT : Bound.HIGHEST;
     Pattern importFilter = requestSnapshots ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
-    Resolve imported =
-        Resolve.of(
-            "",
-            i.group(),
-            i.artifact(),
-            BILL_OF_MATERIALS,
-            DEPS,
-            importBound,
-            Range.fixed(i.version()),
-            ResolveType.IMPORT,
-            importFilter,
-            sourceReference,
-            "imported");
+    Resolve imported = Resolve.of(
+        "",
+        i.group(),
+        i.artifact(),
+        BILL_OF_MATERIALS,
+        DEPS,
+        importBound,
+        Range.fixed(i.version()),
+        ResolveType.IMPORT,
+        importFilter,
+        sourceReference,
+        "imported");
 
     // TODO Make resolveArtifact accept both Resolve and Imported
     try {
@@ -438,22 +383,18 @@ public class RepositoryResolver {
       // ignore
     }
 
-    Artifact artifact =
-        new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
+    Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
     File artifactFile;
 
     LocalArtifactRequest lar = new LocalArtifactRequest(artifact, repositories.toJavaList(), "");
-    LocalArtifactResult localArtifactResult =
-        session.getLocalRepositoryManager().find(session, lar);
+    LocalArtifactResult localArtifactResult = session.getLocalRepositoryManager().find(session, lar);
     artifactFile = localArtifactResult.getFile();
     if (artifactFile == null) {
-      throw new IllegalArgumentException(
-          "Unable to resolve " + artifact.toString() + " in either local or remote repositories.");
+      throw new IllegalArgumentException("Unable to resolve " + artifact.toString() + " in either local or remote repositories.");
     }
 
     try {
-      RangeResolver resolver =
-          parseRangeResolver(i.gav(), new FileReader(artifactFile), allowUnlocked, allowSnapshots);
+      RangeResolver resolver = parseRangeResolver(i.gav(), new FileReader(artifactFile), allowUnlocked, allowSnapshots);
       return snapshotDependencies(resolver, warningLogger, i.snapshots());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -470,32 +411,23 @@ public class RepositoryResolver {
 
     allResolved = allResolved.appendAll(resolver.resolved());
 
-    return resolver
-        .withResolved(sortResolvedThings(allResolved.toJavaList()))
-        .withLocked(sortResolvedThings(locked.toJavaList()));
+    return resolver.withResolved(sortResolvedThings(allResolved.toJavaList())).withLocked(sortResolvedThings(locked.toJavaList()));
   }
 
   public static RangeResolver snapshotDependencies(
       RangeResolver importedRangeResolver, Consumer<String> warningLogger, Set<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
 
-    List<Resolve> snapshotResolves =
-        importedRangeResolver
-            .resolves()
-            .map(
-                r -> {
-                  if (isMatchingSnapshot.test(r)) {
-                    warningLogger.accept("Allowing SNAPSHOT resolution of " + r.key());
-                    return r.withBounds(Bound.SNAPSHOT).withFiltering(ALLOW_SNAPSHOTS);
-                  } else {
-                    return r;
-                  }
-                });
+    List<Resolve> snapshotResolves = importedRangeResolver.resolves().map(r -> {
+      if (isMatchingSnapshot.test(r)) {
+        warningLogger.accept("Allowing SNAPSHOT resolution of " + r.key());
+        return r.withBounds(Bound.SNAPSHOT).withFiltering(ALLOW_SNAPSHOTS);
+      } else {
+        return r;
+      }
+    });
 
-    importedRangeResolver =
-        importedRangeResolver
-            .withResolves(snapshotResolves)
-            .withLocked(importedRangeResolver.locked());
+    importedRangeResolver = importedRangeResolver.withResolves(snapshotResolves).withLocked(importedRangeResolver.locked());
     return importedRangeResolver;
   }
 
@@ -510,44 +442,53 @@ public class RepositoryResolver {
       List<RemoteRepository> repositories,
       Resolve resolve) {
     try {
-
       Option<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
 
       if (!resolvedVersionRange.isDefined()) {
-        String repositorySource =
-            repositories.map(RemoteRepository::toString).mkString("[", "|", "]");
+        String repositorySource = repositories.map(RemoteRepository::toString).mkString("[", "|", "]");
 
-        String baseError =
-            String.format(
-                "Unable to resolve %s releases in the range %s from %s, declared in %s",
-                resolve.key(), resolve.range().asVersionRange(), repositorySource, sourceReference);
+        String baseError = String.format(
+            "Unable to resolve %s releases in the range %s from %s, declared in %s",
+            resolve.key(),
+            resolve.range().asVersionRange(),
+            repositorySource,
+            sourceReference);
 
         warningLogger.accept(baseError);
         return none();
 
       } else {
         boolean deprecated = resolve.resolveType() == ResolveType.DEPRECATE;
+        boolean blacklisted = resolve.resolveType() == ResolveType.BLACKLIST;
+
         Range constrainedRange = resolvedVersionRange.get();
-        String boundVersion =
-            resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
+        String boundVersion = resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
+
+        ResolvedType resolvedType = getResolvedType(resolve);
 
         // Has resolved version actually changed?
         Resolved previouslyLockedResolution = lockedFromLocal.get(resolve.key());
-        ResolvedType resolvedType = deprecated ? ResolvedType.DEPRECATED : ResolvedType.RESOLVED;
 
-        if (previouslyLockedResolution == null
-            || deprecated
-            || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
-          Resolved newlyResolved =
-              Resolved.of(
-                  "",
-                  resolve.group(),
-                  resolve.artifact(),
-                  boundVersion,
-                  sourceReference,
-                  resolve.propertyName(),
-                  constrainedRange,
-                  resolvedType);
+        if (previouslyLockedResolution == null || deprecated || blacklisted ||
+            isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
+          String existingVersion = previouslyLockedResolution == null ? "[undefined]" : previouslyLockedResolution.version();
+
+          infoLogger.accept(String.format(
+              "%s %s: %s is newer than %s",
+              capitalize(resolvedType.name().toLowerCase()),
+              resolve.key(),
+              boundVersion,
+              existingVersion));
+
+          Resolved newlyResolved = Resolved.of(
+              "",
+              resolve.group(),
+              resolve.artifact(),
+              boundVersion,
+              sourceReference,
+              resolve.propertyName(),
+              constrainedRange,
+              resolvedType);
 
           return some(newlyResolved);
         } else {
@@ -561,46 +502,44 @@ public class RepositoryResolver {
     }
   }
 
-  private Option<Range> resolveVersionRange(
-      RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve)
-      throws VersionRangeResolutionException, ArtifactResolutionException {
+  private ResolvedType getResolvedType(Resolve resolve) {
+    switch (resolve.resolveType()) {
+      case DEPRECATE:
+        return ResolvedType.DEPRECATED;
+      case BLACKLIST:
+        return ResolvedType.BLACKLISTED;
+      case RESOLVE:
+        return ResolvedType.RESOLVED;
+      default:
+        return ResolvedType.LOCKED;
+    }
+  }
 
+  private Option<Range> resolveVersionRange(RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve)
+      throws VersionRangeResolutionException, ArtifactResolutionException {
     Artifact artifact = resolveToArtifact(resolve);
     VersionRangeRequest rangeRequest = new VersionRangeRequest();
     rangeRequest.setArtifact(artifact);
     rangeRequest.setRepositories(repositories.toJavaList());
 
     List<Version> resolvedVersions =
-        List.ofAll(repositorySystem.resolveVersionRange(session, rangeRequest).getVersions())
-            .filter(filterVersion(resolve));
+        List.ofAll(repositorySystem.resolveVersionRange(session, rangeRequest).getVersions()).filter(filterVersion(resolve));
 
     if (resolvedVersions.isEmpty()) {
       return none();
     } else {
       Range resolvedRange = resolveBoundRange(resolvedVersions);
-      Set<ArtifactRequest> resolvedArtifactRequests =
-          resovleArtifactRequests(repositories, resolve, resolvedRange);
+      Set<ArtifactRequest> resolvedArtifactRequests = resovleArtifactRequests(repositories, resolve, resolvedRange);
       repositorySystem.resolveArtifacts(session, resolvedArtifactRequests.toJavaSet());
       return Option.of(resolvedRange);
     }
   }
 
-  private Set<ArtifactRequest> resovleArtifactRequests(
-      List<RemoteRepository> repositories, Resolve resolve, Range range) {
+  private Set<ArtifactRequest> resovleArtifactRequests(List<RemoteRepository> repositories, Resolve resolve, Range range) {
     Artifact lowerArtifact =
-        new DefaultArtifact(
-            resolve.group(),
-            resolve.artifact(),
-            resolve.classifier(),
-            resolve.extension(),
-            range.lower());
+        new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), range.lower());
     Artifact upperAritifact =
-        new DefaultArtifact(
-            resolve.group(),
-            resolve.artifact(),
-            resolve.classifier(),
-            resolve.extension(),
-            range.upper());
+        new DefaultArtifact(resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), range.upper());
 
     return HashSet.of(
         new ArtifactRequest(lowerArtifact, repositories.toJavaList(), ""),
@@ -654,17 +593,17 @@ public class RepositoryResolver {
   }
 
   private MetadataRequest buildMetaDataRequest(AbstractResolve rep) {
-    return new MetadataRequest(
-        new DefaultMetadata(rep.group(), rep.artifact(), Metadata.Nature.RELEASE));
+    return new MetadataRequest(new DefaultMetadata(rep.group(), rep.artifact(), Metadata.Nature.RELEASE));
   }
 
   private RemoteRepository buildRepository(AbstractRepository repo, boolean updateSnapshots) {
-    String updatePolicy =
-        updateSnapshots
-            ? RepositoryPolicy.UPDATE_POLICY_ALWAYS
-            : RepositoryPolicy.UPDATE_POLICY_DAILY;
+    String updatePolicy = updateSnapshots ? RepositoryPolicy.UPDATE_POLICY_ALWAYS : RepositoryPolicy.UPDATE_POLICY_DAILY;
     return new RemoteRepository.Builder(repo.url(), "default", repo.url())
         .setPolicy(new RepositoryPolicy(true, updatePolicy, RepositoryPolicy.CHECKSUM_POLICY_WARN))
         .build();
+  }
+
+  public static String capitalize(String word) {
+    return word == null || word.trim().isEmpty() ? "" : word.substring(0, 1).toUpperCase() + word.substring(1);
   }
 }

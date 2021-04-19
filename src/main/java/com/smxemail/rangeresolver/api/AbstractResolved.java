@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 @Value.Immutable
 public abstract class AbstractResolved {
-
   @Value.Parameter
   public abstract String comments();
 
