@@ -72,8 +72,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
           allowables.add(Allow.of("", Allowable.UNLOCKED, Pattern.compile(allowUnlocked), false));
     }
     if (!"".equals(allowSnapshots)) {
-      allowables =
-          allowables.add(Allow.of("", SNAPSHOTS, Pattern.compile(allowSnapshots), false));
+      allowables = allowables.add(Allow.of("", SNAPSHOTS, Pattern.compile(allowSnapshots), false));
     }
 
     List<Repository> repositories = mapList(ctx.repository(), this::resolveRepository);
@@ -225,9 +224,9 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         ResolvedType.RESOLVED);
   }
 
-  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows, Set<Allow> withhelds) {
-    TreeSet<Pattern> emptyPattens =
-        TreeSet.of(Comparator.comparing(p -> p.toString()));
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(
+      Set<Allow> allows, Set<Allow> withhelds) {
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(p -> p.toString()));
 
     Set<Pattern> unlocked =
         allows

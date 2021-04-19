@@ -44,7 +44,6 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -158,12 +157,10 @@ public class RepositoryResolver {
     Map<String, Resolve> overridesFromLocal = overRiddenResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> deprecatesFromLocal = deprecatedResolves.collect(Resolve.collectByKey);
     Map<String, Resolve> blacklistsFromLocal = blacklistedResolves.collect(Resolve.collectByKey);
-
     Map<String, Resolved> lockedFromLocal =
-        rangeResolver
-            .locked()
-            .filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key()))
-            .collect(Resolved.collectByKey);
+        collectAllLockedVersions(rangeResolver, overRiddenResolves);
+    Map<String, Resolved> resolvedFromLocalForVersionChecking =
+        collectAllResolvedVersions(rangeResolver);
 
     List<Resolve> imported = importedResolvers.flatMap(RangeResolver::resolves);
 
@@ -187,7 +184,7 @@ public class RepositoryResolver {
         memo(
             resolve ->
                 resolveArtifact(
-                    lockedFromLocal,
+                    resolvedFromLocalForVersionChecking,
                     resolverReference,
                     session,
                     buildRepositories.apply(resolve),
@@ -208,7 +205,8 @@ public class RepositoryResolver {
                 .map(
                     resolved ->
                         isNewerVersion(resolved, importedArtifacts.get(resolve.key()))
-                            && isNewerVersion(resolved, lockedFromLocal.get(resolve.key())))
+                            && isNewerVersion(
+                                resolved, resolvedFromLocalForVersionChecking.get(resolve.key())))
                 .getOrElse(false);
 
     Predicate<Resolve> isResolvable = isUpdatedAllowed.and(isUpdatedVersion).or(isLocallyDeclared);
@@ -262,8 +260,27 @@ public class RepositoryResolver {
         sortedUniqueLocked);
   }
 
-  private <K,V> Map<K, V> mergeMaps(
-      Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
+  private Map<String, Resolved> collectAllLockedVersions(
+      RangeResolver rangeResolver, List<Resolve> overRiddenResolves) {
+    Map<String, Resolved> lockedFromLocal =
+        rangeResolver
+            .locked()
+            .filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key()))
+            .collect(Resolved.collectByKey);
+    return lockedFromLocal;
+  }
+
+  private Map<String, Resolved> collectAllResolvedVersions(RangeResolver rangeResolver) {
+    Map<String, Resolved> resolvedFromLocalForVersionChecking =
+        rangeResolver
+            .blacklisted()
+            .appendAll(rangeResolver.locked())
+            .appendAll(rangeResolver.deprecated())
+            .collect(Resolved.collectByKey);
+    return resolvedFromLocalForVersionChecking;
+  }
+
+  private <K, V> Map<K, V> mergeMaps(Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
     Map<K, V> deprecatedThings = new HashMap<>();
     deprecatedThings.putAll(importedDeprecations);
     deprecatedThings.putAll(localDeprecations);
@@ -304,7 +321,6 @@ public class RepositoryResolver {
     return sortedUniqueLocked;
   }
 
-  @NotNull
   private Predicate<Resolve> isLocallyDeclared(
       Map<String, Resolve> resolvesFromLocal, Map<String, Resolve> overridesFromLocal) {
     return resolve ->
@@ -341,8 +357,9 @@ public class RepositoryResolver {
   }
 
   private Predicate<Resolve> matchesAllowOrOverride(RangeResolver rangeResolver) {
-    Predicate<String> predicate = matchesAny(allowPatterns(rangeResolver)).and(
-        matchesAny(withheldPatterns(rangeResolver)).negate());
+    Predicate<String> predicate =
+        matchesAny(allowPatterns(rangeResolver))
+            .and(matchesAny(withheldPatterns(rangeResolver)).negate());
 
     List<String> overrideKeys =
         rangeResolver
@@ -361,7 +378,11 @@ public class RepositoryResolver {
   }
 
   private List<Resolved> streamResolvedArtifacts(RangeResolver resolver) {
-    return resolver.locked().appendAll(resolver.resolved()).appendAll(resolver.deprecated()).appendAll(resolver.blacklisted());
+    return resolver
+        .locked()
+        .appendAll(resolver.resolved())
+        .appendAll(resolver.deprecated())
+        .appendAll(resolver.blacklisted());
   }
 
   public static List<Resolved> sortResolvedThings(Iterable<Resolved> values) {
@@ -527,17 +548,35 @@ public class RepositoryResolver {
 
       } else {
         boolean deprecated = resolve.resolveType() == ResolveType.DEPRECATE;
+        boolean blacklisted = resolve.resolveType() == ResolveType.BLACKLIST;
+
         Range constrainedRange = resolvedVersionRange.get();
         String boundVersion =
             resolve.bounds() == Bound.LOWEST ? constrainedRange.lower() : constrainedRange.upper();
 
+        ResolvedType resolvedType = getResolvedType(resolve);
+
         // Has resolved version actually changed?
         Resolved previouslyLockedResolution = lockedFromLocal.get(resolve.key());
-        ResolvedType resolvedType = deprecated ? ResolvedType.DEPRECATED : ResolvedType.RESOLVED;
 
         if (previouslyLockedResolution == null
             || deprecated
+            || blacklisted
             || isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
+
+          String existingVersion =
+              previouslyLockedResolution == null
+                  ? "[undefined]"
+                  : previouslyLockedResolution.version();
+
+          infoLogger.accept(
+              String.format(
+                  "%s %s: %s is newer than %s",
+                  capitalize(resolvedType.name().toLowerCase()),
+                  resolve.key(),
+                  boundVersion,
+                  existingVersion));
+
           Resolved newlyResolved =
               Resolved.of(
                   "",
@@ -558,6 +597,19 @@ public class RepositoryResolver {
     } catch (RepositoryException e) {
       warningLogger.accept(e.getMessage());
       return none();
+    }
+  }
+
+  private ResolvedType getResolvedType(Resolve resolve) {
+    switch (resolve.resolveType()) {
+      case DEPRECATE:
+        return ResolvedType.DEPRECATED;
+      case BLACKLIST:
+        return ResolvedType.BLACKLISTED;
+      case RESOLVE:
+        return ResolvedType.RESOLVED;
+      default:
+        return ResolvedType.LOCKED;
     }
   }
 
@@ -666,5 +718,9 @@ public class RepositoryResolver {
     return new RemoteRepository.Builder(repo.url(), "default", repo.url())
         .setPolicy(new RepositoryPolicy(true, updatePolicy, RepositoryPolicy.CHECKSUM_POLICY_WARN))
         .build();
+  }
+
+  public static String capitalize(String word) {
+    return word == null || word.trim().isEmpty() ? "" : word.substring(0, 1).toUpperCase() + word.substring(1);
   }
 }

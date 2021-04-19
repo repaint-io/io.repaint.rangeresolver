@@ -88,7 +88,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.12.2"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.12.3"
 
   Scenario: Resolution of smx3.archiving should damn well work
     Given the following script:
@@ -106,7 +106,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.12.2"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.12.3"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
