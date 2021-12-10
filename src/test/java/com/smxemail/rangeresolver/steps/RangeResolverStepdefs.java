@@ -254,6 +254,10 @@ public class RangeResolverStepdefs {
 
   @Then("^the resolution of \"([^\"]*)\" should be \"([^\"]*)\"$")
   public void theResolutionOfShouldBe(String artifact, String version) {
+    if (resolutionResult == null) {
+      throw new IllegalStateException("Unable to resolve artifact");
+    }
+
     for (Resolved resolved : resolutionResult.resolved()) {
       if (artifact.equals(resolved.key())) {
         if (version.equals(resolved.version())) {
