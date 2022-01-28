@@ -2,7 +2,7 @@
 repository http://nexus.smxemail.com/nexus/content/repositories/releases/;
 repository https://repo1.maven.org/maven2/ as central;
 
-import smx3:smx3.bill-of-materials:3.3.105;
+import smx3:smx3.bill-of-materials:3.3.121-SNAPSHOT;
 
 allow unlocked /^.*smx.*$/;
 
@@ -30,19 +30,19 @@ locked com.google.guava:failureaccess:1.0.1 from smx3:smx3.upstream.bill-of-mate
 locked com.google.guava:guava:31.0.1-jre from smx3:smx3.upstream.bill-of-materials:1.3.116;
 locked com.google.truth.extensions:truth-java8-extension:1.1.3 from com.smxemail:com.smxemail.rangeresolver:1.1.33;
 locked com.google.truth:truth:1.1.3 from com.smxemail:com.smxemail.rangeresolver:1.1.32;
-locked com.smxemail.tiles:com.smxemail.tiles.enforcements:3.2.105 from smx3:smx3.bill-of-materials:3.3.101;
-locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.34 from smx3:smx3.bill-of-materials:3.3.98;
+locked com.smxemail.tiles:com.smxemail.tiles.enforcements:3.2.111 from smx3:smx3.bill-of-materials:3.3.121;
+locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.39 from smx3:smx3.bill-of-materials:3.3.121;
 locked com.smxemail:com.smxemail.datatype.annotations:1.0.2 from smx3:smx3.bill-of-materials:3.2.76;
 locked com.smxemail:com.smxemail.errorprone.checks:1.0.36 from smx3:smx3.bill-of-materials:3.3.97;
 locked io.cucumber:cucumber-java:7.0.0-RC1 from com.smxemail:com.smxemail.rangeresolver:1.1.32;
 locked io.cucumber:cucumber-junit:7.0.0-RC1 from com.smxemail:com.smxemail.rangeresolver:1.1.32;
-locked io.repaint.maven:tiles-maven-plugin:2.25 from smx3:smx3.upstream.bill-of-materials:1.3.129;
+locked io.repaint.maven:tiles-maven-plugin:2.26 from smx3:smx3.upstream.bill-of-materials:1.3.155;
 locked io.vavr:vavr:1.0.0-alpha-4 from com.smxemail:com.smxemail.rangeresolver:1.1.32;
 locked junit:junit:4.13.2 from com.smxemail:com.smxemail.rangeresolver:1.1.33;
 locked org.antlr:antlr4-maven-plugin:4.9.3 from smx3:smx3.upstream.bill-of-materials:1.3.125;
 locked org.antlr:antlr4-runtime:4.9.3 from smx3:smx3.upstream.bill-of-materials:1.3.125;
 locked org.apache.commons:commons-lang3:3.12.0 from smx3:smx3.upstream.bill-of-materials:1.3.44;
-locked org.apache.maven.plugins:maven-jar-plugin:3.2.0 from smx3:smx3.upstream.bill-of-materials:1.1.34;
+locked org.apache.maven.plugins:maven-jar-plugin:3.2.2 from smx3:smx3.upstream.bill-of-materials:1.3.146;
 locked org.apache.maven.plugins:maven-source-plugin:3.2.1 from smx3:smx3.upstream.bill-of-materials:1.1.44;
 locked org.apache.maven.resolver:maven-resolver-api:1.7.3 from com.smxemail:com.smxemail.rangeresolver:1.1.33;
 locked org.apache.maven.resolver:maven-resolver-connector-basic:1.7.3 from com.smxemail:com.smxemail.rangeresolver:1.1.33;
@@ -54,6 +54,7 @@ locked org.apache.maven.resolver:maven-resolver-util:1.7.3 from com.smxemail:com
 locked org.apache.maven:maven-artifact:3.8.4 from smx3:smx3.upstream.bill-of-materials:1.3.130;
 locked org.apache.maven:maven-resolver-provider:3.8.4 from com.smxemail:com.smxemail.rangeresolver:1.1.33;
 locked org.bitbucket.cowwoc:diff-match-patch:1.2 from smx3:smx3.upstream.testing.bill-of-materials:1.0.6;
-locked org.immutables:value:2.8.8 from smx3:smx3.upstream.bill-of-materials:1.2.6;
+locked org.codehaus.mojo:build-helper-maven-plugin:3.3.0 from smx3:smx3.upstream.bill-of-materials:1.3.144;
+locked org.immutables:value:2.9.0 from smx3:smx3.upstream.bill-of-materials:1.3.149;
 locked org.jacoco:jacoco-maven-plugin:0.8.7 from smx3:smx3.upstream.testing.bill-of-materials:1.0.128;
 locked org.jetbrains:annotations:20.1.0 from smx3:smx3.upstream.bill-of-materials:1.2.34;

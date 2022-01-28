@@ -90,6 +90,15 @@ Feature: Range Resolver
     When resolving with aether
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.1"
 
+  Scenario: Resolution from Azure Devops
+    Given the following script:
+      """
+      repository https://pkgs.dev.azure.com/smxemail/smx3/_packaging/hosted/maven/v1/;
+      resolve highest resolve highest com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.0.0,4.0.0);
+      """
+    When resolving with aether
+    Then the resolution of "smx3:smx3.api" should be "2.13.1"
+
   Scenario: Resolution of smx3.archiving should damn well work
     Given the following script:
       """
