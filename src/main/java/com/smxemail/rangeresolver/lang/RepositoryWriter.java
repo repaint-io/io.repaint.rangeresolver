@@ -93,8 +93,7 @@ public class RepositoryWriter {
 
       for (Resolved resolved : resolveds) {
         printComments(pw, resolved.comments());
-        pw.printf(
-            command + " %s:%s:%s from %s;\n", resolved.group(), resolved.artifact(), resolved.version(), resolved.resolvedFrom());
+        pw.printf(command + " %s:%s:%s;\n", resolved.group(), resolved.artifact(), resolved.version());
       }
     }
   }

@@ -69,8 +69,7 @@ Feature: Range Resolver
       """
       resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
       """
-    Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved from "com.talios:bill-of-materials:1.0.2"
-
+    Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved
 
   Scenario: Resolve resolved artifact with Aether
     Given the following script:
@@ -181,13 +180,13 @@ Feature: Range Resolver
       alias com.smxemail:com.smxemail.api as test.prop;
 
       // comment
-      deprecated com.smxemail:com.smxemail.spi:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      deprecated com.smxemail:com.smxemail.spi:2.0.1;
 
       // comment
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
 
       // comment
-      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      locked com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as unlocked
@@ -199,7 +198,7 @@ Feature: Range Resolver
     And writing the DSL back out
     Then it should match the follow script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as locked
@@ -210,7 +209,7 @@ Feature: Range Resolver
     When writing the DSL back out
     Then it should match the follow script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as snapshots

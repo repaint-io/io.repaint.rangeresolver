@@ -346,7 +346,8 @@ public class RepositoryResolver {
     Map<String, java.util.List<Resolved>> conflicting = resolved.collect(Collectors.groupingBy(Resolved::key));
     for (Map.Entry<String, java.util.List<Resolved>> entry : conflicting.entrySet()) {
       if (entry.getValue().size() > 1) {
-        String resolutionGavs = entry.getValue().stream().map(Resolved::resolvedFrom).collect(Collectors.joining(", "));
+        String resolutionGavs =
+            entry.getValue().stream().map(r -> r.resolvedFrom().getOrElse("")).collect(Collectors.joining(", "));
         warningLogger.accept(String.format("Duplicate resolution of %s found in: %s", entry.getKey(), resolutionGavs));
       }
     }
@@ -477,11 +478,6 @@ public class RepositoryResolver {
             isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
           String existingVersion = previouslyLockedResolution == null ? "[undefined]" : previouslyLockedResolution.version();
 
-          String resolvedSource =
-              previouslyLockedResolution != null && !isNewerVersion(boundVersion, previouslyLockedResolution.version())
-                  ? previouslyLockedResolution.resolvedFrom()
-                  : sourceReference;
-
           if (previouslyLockedResolution != null && isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
             infoLogger.accept(String.format(
                 "%s %s: %s is newer than %s",
@@ -496,7 +492,7 @@ public class RepositoryResolver {
               resolve.group(),
               resolve.artifact(),
               boundVersion,
-              resolvedSource,
+              some(sourceReference),
               resolve.propertyName(),
               constrainedRange,
               resolvedType);

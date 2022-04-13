@@ -1,5 +1,7 @@
 package com.smxemail.rangeresolver.api;
 
+import io.vavr.control.Option;
+
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -23,7 +25,7 @@ public abstract class AbstractResolved {
   public abstract String version();
 
   @Value.Parameter
-  public abstract String resolvedFrom();
+  public abstract Option<String> resolvedFrom();
 
   @Value.Parameter
   public abstract String propertyName();
