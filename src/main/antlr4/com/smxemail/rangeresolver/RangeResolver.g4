@@ -18,11 +18,12 @@ deprecate: comment* DEPRECATE resolution;
 blacklist: comment* BLACKLIST resolution;
 resolution: bounds rangedArtifact resolutionGrouping? filtering? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
-resolved: comment* RESOLVED resolvedArtifact FROM resolvedFromArtifact SEMI;
-locked: comment* LOCKED resolvedArtifact FROM resolvedFromArtifact SEMI;
-deprecated: comment* DEPRECATED resolvedArtifact FROM resolvedFromArtifact SEMI;
-blacklisted: comment* BLACKLISTED resolvedArtifact FROM resolvedFromArtifact SEMI;
+resolved: comment* RESOLVED resolvedArtifact resolutionSource? SEMI;
+locked: comment* LOCKED resolvedArtifact resolutionSource? SEMI;
+deprecated: comment* DEPRECATED resolvedArtifact resolutionSource? SEMI;
+blacklisted: comment* BLACKLISTED resolvedArtifact resolutionSource? SEMI;
 
+resolutionSource: FROM resolvedFromArtifact;
 comment: COMMENT;
 respositoryGrouping: AS value;
 resolutionGrouping: VIA value;

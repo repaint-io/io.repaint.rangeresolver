@@ -6,6 +6,7 @@ import com.google.common.collect.Multimaps;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
+import io.vavr.control.Option;
 
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
@@ -31,6 +32,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static io.vavr.control.Option.none;
+import static io.vavr.control.Option.some;
 
 import static com.smxemail.rangeresolver.api.Allowable.SNAPSHOTS;
 import static com.smxemail.rangeresolver.api.ResolveType.BLACKLIST;
@@ -136,6 +140,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
   }
 
+  private Option<String> resolveSourceContext(RangeResolverParser.ResolutionSourceContext ctx) {
+    return ctx != null ? some(ctx.resolvedFromArtifact().getText()) : none();
+  }
+
   private Resolved resolveLocked(Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
     String group = res.resolvedArtifact().group().getText();
     String artifact = res.resolvedArtifact().artifactId().getText();
@@ -146,7 +154,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         group,
         artifact,
         version,
-        res.resolvedFromArtifact().getText(),
+        resolveSourceContext(res.resolutionSource()),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
         Range.fixed(version),
         ResolvedType.LOCKED);
@@ -157,12 +165,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     String artifact = res.resolvedArtifact().artifactId().getText();
     String key = String.format("%s:%s", group, artifact);
     String version = res.resolvedArtifact().version().getText();
+
     return Resolved.of(
         comments(res.comment()),
         group,
         artifact,
         version,
-        res.resolvedFromArtifact().getText(),
+        resolveSourceContext(res.resolutionSource()),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
         Range.fixed(version),
         ResolvedType.DEPRECATED);
@@ -178,7 +187,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         group,
         artifact,
         version,
-        res.resolvedFromArtifact().getText(),
+        resolveSourceContext(res.resolutionSource()),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
         Range.fixed(version),
         ResolvedType.BLACKLISTED);
@@ -194,7 +203,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         group,
         artifact,
         version,
-        res.resolvedFromArtifact().getText(),
+        resolveSourceContext(res.resolutionSource()),
         propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
         Range.fixed(version),
         ResolvedType.RESOLVED);

@@ -31,6 +31,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static io.vavr.API.Set;
 
+import static org.junit.Assert.fail;
+
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static com.smxemail.rangeresolver.lang.RepositoryResolver.unlockDependencies;
 
@@ -192,14 +194,14 @@ public class RangeResolverStepdefs {
     throw new IllegalStateException(String.format("No resolution for %s with extension %s found.", artifact, extension));
   }
 
-  @Then("^the dependency \"([^\"]*)\" should be resolved from \"([^\"]*)\"$")
-  public void theDependencyShouldBeResolvedFromOn(String artifact, String from) {
+  @Then("^the dependency \"([^\"]*)\" should be resolved$")
+  public void theDependencyShouldBeResolvedFromOn(String artifact) {
     for (Resolved resolved : rangeResolver.resolved()) {
-      if (artifact.equals(resolved.key() + ":" + resolved.version()) && resolved.resolvedFrom().equals(from)) {
+      if (artifact.equals(resolved.key() + ":" + resolved.version())) {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolved artifact for %s from %s found.", artifact, from));
+    throw new IllegalStateException(String.format("No resolved artifact for %s found.", artifact));
   }
 
   @Given("^that \"([^\"]*)\" was previously imported$")
@@ -242,6 +244,9 @@ public class RangeResolverStepdefs {
 
   @Then("^it should fail with \"([^\"]*)\"$")
   public void itShouldFailWith(String message) {
+    if (rangeResolverException == null) {
+      fail("The script generated no exceptions, expected: " + message);
+    }
     assertWithMessage("The Script should has expected exception message!")
         .that(rangeResolverException.getMessage())
         .isEqualTo(message);

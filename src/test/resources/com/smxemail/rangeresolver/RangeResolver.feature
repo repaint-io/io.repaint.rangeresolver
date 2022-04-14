@@ -3,7 +3,7 @@ Feature: Range Resolver
 #    Given the following base script:
 #      """
 #      // Declare repository locations, independent of build tool.
-#      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+#      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
 #      """
 
   Scenario: Parse simple repository declaration
@@ -69,13 +69,12 @@ Feature: Range Resolver
       """
       resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
       """
-    Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved from "com.talios:bill-of-materials:1.0.2"
-
+    Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved
 
   Scenario: Resolve resolved artifact with Aether
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases;
+      repository https://nexus.az1.smxk8s.net/repository/maven-releases;
       resolve lowest com.smxemail:com.smxemail.api:[13.0.0,20.0.0);
       """
     When resolving with aether
@@ -84,16 +83,16 @@ Feature: Range Resolver
   Scenario: Resolution filtering should default to preventing SNAPSHOTS selection from Aether
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.1"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.2"
 
   Scenario: Resolution of smx3.archiving should damn well work
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases/;
+      repository https://nexus.az1.smxk8s.net/repository/maven-releases/;
       resolve highest smx3:smx3.archiving:[5.0.3,8.0.0);
       """
     When resolving with aether
@@ -102,25 +101,25 @@ Feature: Range Resolver
   Scenario: Resolution filtering should limit range selection from Aether
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.1"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.2"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
       resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
     When resolving with aether
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "3.0-SNAPSHOT"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.13.2"
 
   Scenario: Resolution allow for explicit locked versions from Aether
     Given the following script:
       """
-      repository http://nexus.smxemail.com/nexus/content/groups/public/;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0];
       """
     When resolving with aether
@@ -130,8 +129,8 @@ Feature: Range Resolver
     Given the following script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
-      repository http://nexus.smxemail.com/nexus/group/public;
+      repository https://nexus.az1.smxk8s.net/repository/maven-releases as releases;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
       // comment
       import com.talios:bill-of-materials:1.0.2;
       import com.talios.test:bill-of-materials:1.0.2;
@@ -158,8 +157,8 @@ Feature: Range Resolver
     Then it should match the follow script:
       """
       // comment
-      repository http://nexus.smxemail.com/nexus/content/repositories/releases as releases;
-      repository http://nexus.smxemail.com/nexus/group/public;
+      repository https://nexus.az1.smxk8s.net/repository/maven-releases as releases;
+      repository https://nexus.az1.smxk8s.net/repository/maven-public-group;
 
       // comment
       import com.talios:bill-of-materials:1.0.2;
@@ -181,13 +180,13 @@ Feature: Range Resolver
       alias com.smxemail:com.smxemail.api as test.prop;
 
       // comment
-      deprecated com.smxemail:com.smxemail.spi:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      deprecated com.smxemail:com.smxemail.spi:2.0.1;
 
       // comment
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
 
       // comment
-      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      locked com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as unlocked
@@ -199,7 +198,7 @@ Feature: Range Resolver
     And writing the DSL back out
     Then it should match the follow script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as locked
@@ -210,7 +209,7 @@ Feature: Range Resolver
     When writing the DSL back out
     Then it should match the follow script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       """
 
   Scenario: Importing DSL as snapshots
