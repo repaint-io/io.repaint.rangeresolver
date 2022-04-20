@@ -4,7 +4,7 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.1.35-SNAPSHOT</version>
+  <version>1.1.36-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
@@ -86,43 +86,43 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <version>[1.7.3]</version>
+      <version>[1.8.0]</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
@@ -196,7 +196,7 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.43]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.45]</tile>
             <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.127]</tile>
           </tiles>
         </configuration>
