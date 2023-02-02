@@ -84,26 +84,28 @@ public class RepositoryResolver {
 
   private Consumer<String> infoLogger;
   private Consumer<String> warningLogger;
-  private String localRepoDir;
   private String allowUnlocked;
   private String allowSnapshots;
   private boolean updateSnapshots;
   private RepositorySystem repositorySystem;
+  private RepositorySystemSession session;
 
   private RepositoryResolver(
+      RepositorySystem repositorySystem,
+      RepositorySystemSession session,
       Consumer<String> infoLogger,
       Consumer<String> warningLogger,
-      String localRepoDir,
       String allowUnlocked,
       String allowSnapshots,
       boolean updateSnapshots) {
+    this.repositorySystem = repositorySystem;
+    this.session = session;
     this.infoLogger = infoLogger;
     this.warningLogger = warningLogger;
-    this.localRepoDir = localRepoDir;
     this.allowUnlocked = allowUnlocked;
     this.allowSnapshots = allowSnapshots;
     this.updateSnapshots = updateSnapshots;
-    this.repositorySystem = newRepositorySystem();
+    this.repositorySystem = repositorySystem;
   }
 
   public static RepositoryResolver createRepositoryResolver(
@@ -113,7 +115,27 @@ public class RepositoryResolver {
       String allowUnlocked,
       String allowSnapshots,
       boolean updateSnapshots) {
-    return new RepositoryResolver(infoLogger, warningLogger, localRepoDir, allowUnlocked, allowSnapshots, updateSnapshots);
+    RepositorySystem system = newRepositorySystem();
+    return new RepositoryResolver(
+        system,
+        newRepositorySystemSession(system, localRepoDir),
+        infoLogger,
+        warningLogger,
+        allowUnlocked,
+        allowSnapshots,
+        updateSnapshots);
+  }
+
+  public static RepositoryResolver createRepositoryResolver(
+      RepositorySystem repositorySystem,
+      RepositorySystemSession session,
+      Consumer<String> infoLogger,
+      Consumer<String> warningLogger,
+      String allowUnlocked,
+      String allowSnapshots,
+      boolean updateSnapshots) {
+    return new RepositoryResolver(
+        repositorySystem, session, infoLogger, warningLogger, allowUnlocked, allowSnapshots, updateSnapshots);
   }
 
   private static RepositorySystem newRepositorySystem() {
@@ -124,7 +146,7 @@ public class RepositoryResolver {
     return locator.getService(RepositorySystem.class);
   }
 
-  public RepositorySystemSession newRepositorySystemSession() {
+  private static RepositorySystemSession newRepositorySystemSession(RepositorySystem repositorySystem, String localRepoDir) {
     DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
     LocalRepository localRepo = new LocalRepository(localRepoDir);
     LocalRepositoryManager localRepositoryManager =
@@ -141,8 +163,6 @@ public class RepositoryResolver {
    * @throws RepositoryException
    */
   public ResolutionResult resolveRanges(RangeResolver rangeResolver, String resolverReference, String sourceReference) {
-    RepositorySystemSession session = newRepositorySystemSession();
-
     List<RemoteRepository> repositories = buildeRepositories(rangeResolver.repositories().values());
 
     repositorySystem.newResolutionRepositories(session, repositories.toJavaList());
