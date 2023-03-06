@@ -87,49 +87,49 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.6</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>24.0.0</version>
+      <version>24.0.1</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -197,8 +197,8 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.66]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.147]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.67]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.151]</tile>
           </tiles>
         </configuration>
       </plugin>
