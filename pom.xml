@@ -25,7 +25,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>32.0.1-jre</version>
+      <version>32.1.2-jre</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -58,7 +58,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
+      <version>3.13.0</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -70,7 +70,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>3.9.2</version>
+      <version>3.9.4</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -81,49 +81,49 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.9.2</version>
+      <version>3.9.4</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-http</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <version>1.9.12</version>
+      <version>1.9.15</version>
       <exclusions></exclusions>
     </dependency>
     <dependency>
@@ -165,13 +165,13 @@
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <version>7.12.1</version>
+      <version>7.13.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit</artifactId>
-      <version>7.12.1</version>
+      <version>7.13.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -197,8 +197,8 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.83]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.169]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.85]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[3.2.174]</tile>
           </tiles>
         </configuration>
       </plugin>
