@@ -191,8 +191,7 @@ public class RepositoryResolver {
     Predicate<Resolve> isUpdatedAllowed = matchesAllowOrOverride(rangeResolver);
 
     infoLogger.accept("Resolving metadata for " + resolverReference);
-    List<Resolve> toResolve = imported.filter(isUpdatedAllowed.and(r -> !overridesFromLocal.keySet().contains(r.key())))
-                                  .appendAll(rangeResolver.resolves());
+    List<Resolve> toResolve = imported.filter(isUpdatedAllowed).appendAll(rangeResolver.resolves());
 
     resolveArtifacts(session, toResolve);
 
@@ -254,8 +253,9 @@ public class RepositoryResolver {
   }
 
   private Map<String, Resolved> collectAllLockedVersions(RangeResolver rangeResolver, List<Resolve> overRiddenResolves) {
+    List<String> overridenKeys = overRiddenResolves.map(Resolve::key);
     Map<String, Resolved> lockedFromLocal =
-        rangeResolver.locked().filter(r -> !overRiddenResolves.map(Resolve::key).contains(r.key())).collect(Resolved.collectByKey);
+        rangeResolver.locked().filter(r -> !overridenKeys.contains(r.key())).collect(Resolved.collectByKey);
     return lockedFromLocal;
   }
 
@@ -629,7 +629,6 @@ public class RepositoryResolver {
     RemoteRepository.Builder builder =
         new RemoteRepository
             .Builder(repo.url(), "default", repo.url())
-
             .setPolicy(new RepositoryPolicy(true, updatePolicy, RepositoryPolicy.CHECKSUM_POLICY_WARN));
 
     return builder.build();
