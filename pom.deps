@@ -6,6 +6,8 @@ import smx3:smx3.bill-of-materials:3.7.111;
 
 allow unlocked /^.*smx.*$/;
 
+resolve highest org.antlr:antlr4-maven-plugin:[4.13.2,5.0.0) via central;
+resolve highest org.antlr:antlr4-runtime:[4.13.2,5.0.0) via central;
 resolve highest com.google.truth:truth:[1.4.4,2.0) via central;
 resolve highest io.vavr:vavr:[0.10.7,1.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
 resolve highest io.cucumber:cucumber-java:[7.26.0,8.0.0) via central;
