@@ -6,13 +6,13 @@ import com.google.common.collect.Multimaps;
 import io.vavr.collection.List;
 import io.vavr.collection.Set;
 import io.vavr.collection.TreeSet;
-import io.vavr.control.Option;
 
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Allow;
 import com.smxemail.rangeresolver.api.Allowable;
+import com.smxemail.rangeresolver.api.ArtifactType;
 import com.smxemail.rangeresolver.api.Bound;
 import com.smxemail.rangeresolver.api.Import;
 import com.smxemail.rangeresolver.api.PropertyBased;
@@ -34,13 +34,17 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static io.vavr.control.Option.none;
-import static io.vavr.control.Option.some;
 
 import static com.smxemail.rangeresolver.api.Allowable.SNAPSHOTS;
+import static com.smxemail.rangeresolver.api.Bound.HIGHEST;
 import static com.smxemail.rangeresolver.api.ResolveType.BLACKLIST;
 import static com.smxemail.rangeresolver.api.ResolveType.DEPRECATE;
 import static com.smxemail.rangeresolver.api.ResolveType.OVERRIDE;
 import static com.smxemail.rangeresolver.api.ResolveType.RESOLVE;
+import static com.smxemail.rangeresolver.api.ResolvedType.BLACKLISTED;
+import static com.smxemail.rangeresolver.api.ResolvedType.DEPRECATED;
+import static com.smxemail.rangeresolver.api.ResolvedType.LOCKED;
+import static com.smxemail.rangeresolver.api.ResolvedType.RESOLVED;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
@@ -50,6 +54,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   public static final Pattern ALLOW_SNAPSHOTS = Pattern.compile("");
 
   public static final Pattern FILTER_SNAPSHOTS = Pattern.compile("^.*-SNAPSHOT$");
+  public static final String DEFAULT_GROUP = "default";
+  public static final String DOCKER_GROUP = "docker";
 
   private final String sourceReference;
 
@@ -85,7 +91,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolve> deprecations = mapList(ctx.deprecate(), this::resolveDeprecations);
     List<Resolve> resolves = mapList(ctx.resolve(), this::resolveResolve);
     List<Resolve> overrides = mapList(ctx.override(), this::resolveOverride);
-    List<Resolve> allResolves = blacklists.appendAll(deprecations).appendAll(resolves).appendAll(overrides);
+    List<Resolve> allResolves =
+        blacklists.appendAll(deprecations).appendAll(resolves).appendAll(overrides);
     List<Alias> aliases = mapList(ctx.alias(), this::resolveAlias);
 
     Multimap<String, Repository> repositoryMap = Multimaps.index(repositories, Repository::grouping);
@@ -113,7 +120,16 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     List<Resolved> blacklisted = mapList(ctx.blacklisted(), res -> resolveBlacklisted(effectivePropertyNames, res));
 
     return RangeResolver.of(
-        repositoryMap, imports, allowables, withhelds, allResolves, aliases, resolveds, deprecateds, blacklisted, locked);
+        repositoryMap,
+        imports,
+        allowables,
+        withhelds,
+        allResolves,
+        aliases,
+        resolveds,
+        deprecateds,
+        blacklisted,
+        locked);
   }
 
   private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
@@ -132,7 +148,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
   }
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
-    String grouping = "default";
+    String grouping = DEFAULT_GROUP;
     if (rep.respositoryGrouping() != null) {
       grouping = rep.respositoryGrouping().value().getText();
     }
@@ -140,100 +156,94 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
   }
 
-  private Option<String> resolveSourceContext(RangeResolverParser.ResolutionSourceContext ctx) {
-    return ctx != null ? some(ctx.resolvedFromArtifact().getText()) : none();
+  record ArtifactInfo(ArtifactType type, String group, String artifact, String version) {}
+
+  private ArtifactInfo liftArtifact(RangeResolverParser.ResolvedArtifactContext artifactContext) {
+    var dockerImage = artifactContext.resolvedDockerImage();
+    var mavenArtifact = artifactContext.resolvedMavenArtifact();
+
+    if (dockerImage != null) {
+      var artifactId = dockerImage.artifactId().getText();
+      var version = "sha256:" + dockerImage.version().getText();
+
+      return new ArtifactInfo(ArtifactType.DOCKER, DOCKER_GROUP, artifactId, version);
+    } else {
+      var group = mavenArtifact.group().getText();
+      var artifactId = mavenArtifact.artifactId().getText();
+      var version = mavenArtifact.version().getText();
+
+      return new ArtifactInfo(ArtifactType.MAVEN, group, artifactId, version);
+    }
+  }
+
+  private Resolved resolveArtifact(
+      ResolvedType type,
+      Map<String, String> propertyNames,
+      ArtifactInfo artifactInfo,
+      java.util.List<RangeResolverParser.CommentContext> comments) {
+    String key = String.format("%s:%s", artifactInfo.group(), artifactInfo.artifact());
+    String version = artifactInfo.version();
+    return Resolved.of(
+        comments(comments),
+        artifactInfo.type(),
+        artifactInfo.group(),
+        artifactInfo.artifact(),
+        version,
+        none(),
+        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifactInfo.artifact())),
+        Range.fixed(version),
+        type);
   }
 
   private Resolved resolveLocked(Map<String, String> propertyNames, RangeResolverParser.LockedContext res) {
-    String group = res.resolvedArtifact().group().getText();
-    String artifact = res.resolvedArtifact().artifactId().getText();
-    String key = String.format("%s:%s", group, artifact);
-    String version = res.resolvedArtifact().version().getText();
-    return Resolved.of(
-        comments(res.comment()),
-        group,
-        artifact,
-        version,
-        resolveSourceContext(res.resolutionSource()),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version),
-        ResolvedType.LOCKED);
+    return resolveArtifact(LOCKED, propertyNames, liftArtifact(res.resolvedArtifact()), res.comment());
   }
 
   private Resolved resolveDeprecated(Map<String, String> propertyNames, RangeResolverParser.DeprecatedContext res) {
-    String group = res.resolvedArtifact().group().getText();
-    String artifact = res.resolvedArtifact().artifactId().getText();
-    String key = String.format("%s:%s", group, artifact);
-    String version = res.resolvedArtifact().version().getText();
-
-    return Resolved.of(
-        comments(res.comment()),
-        group,
-        artifact,
-        version,
-        resolveSourceContext(res.resolutionSource()),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version),
-        ResolvedType.DEPRECATED);
+    return resolveArtifact(DEPRECATED, propertyNames, liftArtifact(res.resolvedArtifact()), res.comment());
   }
 
   private Resolved resolveBlacklisted(Map<String, String> propertyNames, RangeResolverParser.BlacklistedContext res) {
-    String group = res.resolvedArtifact().group().getText();
-    String artifact = res.resolvedArtifact().artifactId().getText();
-    String key = String.format("%s:%s", group, artifact);
-    String version = res.resolvedArtifact().version().getText();
-    return Resolved.of(
-        comments(res.comment()),
-        group,
-        artifact,
-        version,
-        resolveSourceContext(res.resolutionSource()),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version),
-        ResolvedType.BLACKLISTED);
+    return resolveArtifact(BLACKLISTED, propertyNames, liftArtifact(res.resolvedArtifact()), res.comment());
   }
 
   private Resolved resolveResolved(Map<String, String> propertyNames, RangeResolverParser.ResolvedContext res) {
-    String group = res.resolvedArtifact().group().getText();
-    String artifact = res.resolvedArtifact().artifactId().getText();
-    String key = String.format("%s:%s", res.resolvedArtifact().group().getText(), res.resolvedArtifact().artifactId().getText());
-    String version = res.resolvedArtifact().version().getText();
-    return Resolved.of(
-        comments(res.comment()),
-        group,
-        artifact,
-        version,
-        resolveSourceContext(res.resolutionSource()),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifact)),
-        Range.fixed(version),
-        ResolvedType.RESOLVED);
+    return resolveArtifact(RESOLVED, propertyNames, liftArtifact(res.resolvedArtifact()), res.comment());
   }
 
-  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(Set<Allow> allows, Set<Allow> withhelds) {
+  private Function<RangeResolverParser.ImportedContext, Import> resolveImport(
+      Set<Allow> allows, Set<Allow> withhelds) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(p -> p.toString()));
 
     Set<Pattern> unlocked = allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-                                .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+        .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
     Set<Pattern> snapshots = allows.filter(allow -> allow.allowable() == SNAPSHOTS)
-                                 .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+        .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
-    Set<Pattern> withheld = withhelds.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
-                                .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
+    Set<Pattern> withheld = withhelds
+        .filter(allow -> allow.allowable() == Allowable.UNLOCKED)
+        .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
 
-    return importContext
-        -> Import.of(
-            comments(importContext.comment()),
-            importContext.resolvedArtifact().group().getText(),
-            importContext.resolvedArtifact().artifactId().getText(),
-            importContext.resolvedArtifact().version().getText(),
-            snapshots,
-            unlocked,
-            withheld);
+    return importContext -> {
+      var artifact = liftArtifact(importContext.resolvedArtifact());
+      return Import.of(
+          comments(importContext.comment()),
+          artifact.group(),
+          artifact.artifact(),
+          artifact.version(),
+          snapshots,
+          unlocked,
+          withheld);
+    };
   }
 
   private Resolve resolveResolve(RangeResolverParser.ResolveContext resolve) {
-    return resolveResolution(resolve.resolution(), RESOLVE, resolve.comment());
+    if (resolve.docker() != null) {
+      return resolveDocker(resolve.docker());
+    } else {
+      return resolveResolution(resolve.resolution(), RESOLVE, resolve.comment());
+    }
   }
 
   private Resolve resolveBlacklists(RangeResolverParser.BlacklistContext resolve) {
@@ -248,6 +258,22 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     return resolveResolution(overide.resolution(), OVERRIDE, overide.comment());
   }
 
+  private Resolve resolveDocker(RangeResolverParser.DockerContext docker) {
+    Range range = Range.fixed(docker.dockerImage().version().getText());
+    return Resolve.of(
+        comments(docker.comment()),
+        DOCKER_GROUP,
+        docker.dockerImage().getText(),
+        "",
+        "",
+        HIGHEST,
+        range,
+        ResolveType.DOCKER,
+        ALLOW_SNAPSHOTS,
+        "",
+        DOCKER_GROUP);
+  }
+
   private Resolve resolveResolution(
       RangeResolverParser.ResolutionContext res,
       ResolveType resolveType,
@@ -256,7 +282,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
     Pattern filteringRegex = resolveFilteringPattern(filtering, bound);
 
-    String grouping = "default";
+    String grouping = DEFAULT_GROUP;
     if (res.resolutionGrouping() != null) {
       grouping = res.resolutionGrouping().value().getText();
     }
@@ -292,7 +318,10 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Alias resolveAlias(RangeResolverParser.AliasContext res) {
     return Alias.of(
-        comments(res.comment()), res.artifact().group().getText(), res.artifact().artifactId().getText(), alias(res.aliasValue()));
+        comments(res.comment()),
+        res.artifact().group().getText(),
+        res.artifact().artifactId().getText(),
+        alias(res.aliasValue()));
   }
 
   private Range range(RangeResolverParser.RangeContext context) {

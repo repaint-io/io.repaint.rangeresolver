@@ -17,6 +17,7 @@ import java.io.Writer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+import static com.smxemail.rangeresolver.api.ArtifactType.DOCKER;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
@@ -68,6 +69,7 @@ public class RepositoryWriter {
 
       printResolution(pw, "blacklist", ResolveType.BLACKLIST.from(rangeResolver));
       printResolution(pw, "deprecate", ResolveType.DEPRECATE.from(rangeResolver));
+      printDockerResolution(pw, "resolve docker", ResolveType.DOCKER.from(rangeResolver));
       printResolution(pw, "resolve", ResolveType.RESOLVE.from(rangeResolver));
       printResolution(pw, "override", ResolveType.OVERRIDE.from(rangeResolver));
 
@@ -89,11 +91,19 @@ public class RepositoryWriter {
 
   private static void printResolved(PrintWriter pw, String command, List<Resolved> resolveds) {
     if (!resolveds.isEmpty()) {
-      pw.println();
+      var groupedResolved = resolveds.groupBy(Resolved::artifactType);
 
-      for (Resolved resolved : resolveds) {
-        printComments(pw, resolved.comments());
-        pw.printf(command + " %s:%s:%s;\n", resolved.group(), resolved.artifact(), resolved.version());
+      for (var group : groupedResolved) {
+        pw.println();
+
+        for (Resolved resolved : group._2) {
+          printComments(pw, resolved.comments());
+          if (resolved.artifactType() == DOCKER) {
+            pw.printf(command + " %s@%s;\n", resolved.artifact(), resolved.version());
+          } else {
+            pw.printf(command + " %s:%s:%s;\n", resolved.group(), resolved.artifact(), resolved.version());
+          }
+        }
       }
     }
   }
@@ -114,11 +124,23 @@ public class RepositoryWriter {
           pw.printf(" via %s", resolve.grouping());
         }
 
-        if (resolve.bounds() != Bound.SNAPSHOT && resolve.filtering() != ALLOW_SNAPSHOTS &&
-            resolve.filtering() != FILTER_SNAPSHOTS) {
+        if (resolve.bounds() != Bound.SNAPSHOT
+            && resolve.filtering() != ALLOW_SNAPSHOTS
+            && resolve.filtering() != FILTER_SNAPSHOTS) {
           pw.printf(" filtering /%s/", resolve.filtering());
         }
         pw.printf(";\n");
+      }
+    }
+  }
+
+  private static void printDockerResolution(PrintWriter pw, String command, List<Resolve> resolveds) {
+    if (!resolveds.isEmpty()) {
+      pw.println();
+
+      for (Resolve resolve : resolveds) {
+        printComments(pw, resolve.comments());
+        pw.printf(command + " %s;\n", resolve.artifact());
       }
     }
   }

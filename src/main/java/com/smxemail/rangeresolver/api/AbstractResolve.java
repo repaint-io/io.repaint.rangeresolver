@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static com.smxemail.rangeresolver.api.ResolveType.DOCKER;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ARTIFACT_VERSION;
 
 @Value.Immutable
@@ -49,13 +50,25 @@ public abstract class AbstractResolve implements PropertyBased {
   @Override
   @Value.Derived
   public String key() {
-    return String.format("%s:%s", group(), artifact());
+    if (resolveType().equals(DOCKER)) {
+      return String.format("%s", stripDockerTagArtifact());
+    } else {
+      return String.format("%s:%s", group(), artifact());
+    }
   }
 
   @Override
   @Value.Derived
   public String propertyName() {
-    return String.format(ARTIFACT_VERSION, artifact());
+    if (resolveType().equals(DOCKER)) {
+      return String.format(ARTIFACT_VERSION, stripDockerTagArtifact());
+    } else {
+      return String.format(ARTIFACT_VERSION, artifact());
+    }
+  }
+
+  private String stripDockerTagArtifact() {
+    return artifact().substring(0, artifact().indexOf(":"));
   }
 
   public static final Collector<Resolve, ?, Map<String, Resolve>> collectByKey =

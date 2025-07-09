@@ -10,10 +10,15 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static com.smxemail.rangeresolver.api.ArtifactType.DOCKER;
+
 @Value.Immutable
 public abstract class AbstractResolved {
   @Value.Parameter
   public abstract String comments();
+
+  @Value.Parameter
+  public abstract ArtifactType artifactType();
 
   @Value.Parameter
   public abstract String group();
@@ -38,7 +43,11 @@ public abstract class AbstractResolved {
 
   @Value.Derived
   public String key() {
-    return String.format("%s:%s", group(), artifact());
+    if (artifactType().equals(DOCKER)) {
+      return String.format("%s", artifact());
+    } else {
+      return String.format("%s:%s", group(), artifact());
+    }
   }
 
   @Override

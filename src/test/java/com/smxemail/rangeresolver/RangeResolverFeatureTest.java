@@ -6,5 +6,11 @@ import io.cucumber.junit.CucumberOptions;
 import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
-@CucumberOptions(plugin = {"pretty", "html:target/test-report.html", "json:target/test-report.json", "junit:target/test-report.xml"})
+@CucumberOptions(
+    plugin = {
+      "pretty",
+      "html:target/test-report.html",
+      "json:target/test-report.json",
+      "junit:target/test-report.xml"
+    })
 public class RangeResolverFeatureTest {}

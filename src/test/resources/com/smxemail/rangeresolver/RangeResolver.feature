@@ -37,7 +37,7 @@ Feature: Range Resolver
 #      import com.talios:bill-of-materials:1.0.2;
 #      """
 #    And that "com.talios:bill-of-materials:1.0.2" was previously imported
-#    When resolving with aether
+#    When resolving
 #    Then it should fail with "Circular imports detected for com.talios:bill-of-materials:1.0.2 in cucumber-import"
 
   Scenario: Parse resolution request
@@ -77,7 +77,7 @@ Feature: Range Resolver
       repository https://repo1.maven.org/maven2;
       resolve lowest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
-    When resolving with aether
+    When resolving
     Then it should succeed
 
   Scenario: Resolution filtering should default to preventing SNAPSHOTS selection from Aether
@@ -86,7 +86,7 @@ Feature: Range Resolver
       repository https://repo1.maven.org/maven2;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0];
       """
-    When resolving with aether
+    When resolving
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "3.0-rc5"
 
   Scenario: Resolution filtering should limit range selection from Aether
@@ -95,7 +95,7 @@ Feature: Range Resolver
       repository https://repo1.maven.org/maven2;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
-    When resolving with aether
+    When resolving
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.19.2"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
@@ -104,7 +104,7 @@ Feature: Range Resolver
       repository https://repo1.maven.org/maven2;
       resolve snapshot com.fasterxml.jackson.core:jackson-annotations:[2.8.0,3.0.0];
       """
-    When resolving with aether
+    When resolving
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "3.0-rc5"
 
   Scenario: Resolution allow for explicit locked versions from Aether
@@ -113,8 +113,38 @@ Feature: Range Resolver
       repository https://repo1.maven.org/maven2;
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.8.0];
       """
-    When resolving with aether
+    When resolving
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
+
+  @docker
+  Scenario: Resolution of docker images should work
+    Given the following script:
+      """
+      resolve docker almalinux:8-minimal;
+      """
+    When resolving
+    Then the resolution of "almalinux" should be "sha256:72fa4e831affa9ab4f2a009dea3c0d9f24ce47ea5531e65a021689d30d04d287"
+    And the dependency "almalinux" should use the property "almalinux.version"
+    And writing the DSL back out
+    Then it should match the follow script:
+      """
+      resolve docker almalinux:8-minimal;
+
+      resolved almalinux@sha256:72fa4e831affa9ab4f2a009dea3c0d9f24ce47ea5531e65a021689d30d04d287;
+      """
+
+  @docker
+  Scenario: Parsing of resolved docker images should work
+    Given the following script:
+      """
+      locked almalinux@sha256:dfde3fb768a3200078793476af4d021e58308de1450fc1e1878e2db5e3880e00;
+      """
+    When importing as unlocked
+    And writing the DSL back out
+    Then it should match the follow script:
+      """
+      resolved almalinux@sha256:dfde3fb768a3200078793476af4d021e58308de1450fc1e1878e2db5e3880e00;
+      """
 
   Scenario: Write resolved DSL back out
     Given the following script:
