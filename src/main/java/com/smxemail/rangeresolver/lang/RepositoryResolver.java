@@ -51,9 +51,9 @@ import com.smxemail.rangeresolver.api.Resolved;
 import com.smxemail.rangeresolver.api.ResolvedType;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -517,8 +517,7 @@ public class RepositoryResolver {
     }
 
     try {
-      RangeResolver resolver =
-          parseRangeResolver(i.gav(), new FileReader(artifactFile), allowUnlocked, allowSnapshots);
+      RangeResolver resolver = parseRangeResolver(i.gav(), Files.newBufferedReader(artifactFile.toPath()), allowUnlocked, allowSnapshots);
       return snapshotDependencies(resolver, warningLogger, i.snapshots());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
