@@ -30,15 +30,15 @@ public abstract class AbstractRange {
   protected void check() {
     if (isNewerVersion(lower(), upper())) {
       throw new IllegalArgumentException(
-          String.format("Invalid range requested, %s is lower than %s", upper(), lower()));
+          "Invalid range requested, %s is lower than %s".formatted(upper(), lower()));
     }
   }
 
   public String asVersionRange() {
     if (lower().equals(upper())) {
-      return String.format("[%s]", lower());
+      return "[%s]".formatted(lower());
     } else {
-      return String.format("%s%s,%s%s", lowerChar(), lower(), upper(), upperChar());
+      return "%s%s,%s%s".formatted(lowerChar(), lower(), upper(), upperChar());
     }
   }
 }

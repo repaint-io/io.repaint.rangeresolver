@@ -12,7 +12,7 @@ import com.smxemail.rangeresolver.api.RangeResolver;
 import java.io.IOException;
 import java.io.Reader;
 
-public class RangeResolverProcessor {
+public final class RangeResolverProcessor {
   public static RangeResolver parseRangeResolver(
       String sourceReference, Reader reader, String allowUnlocked, String allowSnapshots) throws IOException {
     CharStream charStream = CharStreams.fromReader(reader);
@@ -22,7 +22,8 @@ public class RangeResolverProcessor {
 
     RangeResolverVisitor rangeResolverVisitor =
         new RangeResolverVisitor(sourceReference, allowUnlocked, allowSnapshots);
-    RangeResolver rangeResolver = rangeResolverVisitor.visit(parser.resolver());
-    return rangeResolver;
+    return rangeResolverVisitor.visit(parser.resolver());
   }
+
+  private RangeResolverProcessor() {}
 }

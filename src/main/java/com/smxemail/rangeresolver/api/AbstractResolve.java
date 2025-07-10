@@ -51,9 +51,9 @@ public abstract class AbstractResolve implements PropertyBased {
   @Value.Derived
   public String key() {
     if (resolveType().equals(DOCKER)) {
-      return String.format("%s", stripDockerTagArtifact());
+      return "%s".formatted(stripDockerTagArtifact());
     } else {
-      return String.format("%s:%s", group(), artifact());
+      return "%s:%s".formatted(group(), artifact());
     }
   }
 
@@ -61,9 +61,9 @@ public abstract class AbstractResolve implements PropertyBased {
   @Value.Derived
   public String propertyName() {
     if (resolveType().equals(DOCKER)) {
-      return String.format(ARTIFACT_VERSION, stripDockerTagArtifact());
+      return ARTIFACT_VERSION.formatted(stripDockerTagArtifact());
     } else {
-      return String.format(ARTIFACT_VERSION, artifact());
+      return ARTIFACT_VERSION.formatted(artifact());
     }
   }
 
@@ -74,7 +74,7 @@ public abstract class AbstractResolve implements PropertyBased {
   public static final Collector<Resolve, ?, Map<String, Resolve>> collectByKey =
       Collectors.toMap(Resolve::key, Function.identity());
 
-  public static final Map<String, Resolve> mapByKey(List<Resolve> resolves) {
+  public static Map<String, Resolve> mapByKey(List<Resolve> resolves) {
     return resolves.stream().collect(collectByKey);
   }
 }

@@ -31,11 +31,11 @@ public abstract class AbstractImport {
 
   @Value.Derived
   public String key() {
-    return String.format("%s:%s", group(), artifact());
+    return "%s:%s".formatted(group(), artifact());
   }
 
   @Value.Derived
   public String gav() {
-    return String.format("%s:%s:%s", group(), artifact(), version());
+    return "%s:%s:%s".formatted(group(), artifact(), version());
   }
 }

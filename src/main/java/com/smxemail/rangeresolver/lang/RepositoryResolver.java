@@ -83,18 +83,18 @@ import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSH
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-public class RepositoryResolver {
+public final class RepositoryResolver {
   public static final String BILL_OF_MATERIALS = "bill-of-materials";
 
   public static final String DEPS = "deps";
 
-  private Consumer<String> infoLogger;
-  private Consumer<String> warningLogger;
-  private String allowUnlocked;
-  private String allowSnapshots;
-  private boolean updateSnapshots;
+  private final Consumer<String> infoLogger;
+  private final Consumer<String> warningLogger;
+  private final String allowUnlocked;
+  private final String allowSnapshots;
+  private final boolean updateSnapshots;
   private RepositorySystem repositorySystem;
-  private RepositorySystemSession session;
+  private final RepositorySystemSession session;
 
   private RepositoryResolver(
       RepositorySystem repositorySystem,
@@ -329,20 +329,18 @@ public class RepositoryResolver {
   private Map<String, Resolved> collectAllLockedVersions(
       RangeResolver rangeResolver, List<Resolve> overRiddenResolves) {
     List<String> overridenKeys = overRiddenResolves.map(Resolve::key);
-    Map<String, Resolved> lockedFromLocal = rangeResolver
+    return rangeResolver
         .locked()
         .filter(r -> !overridenKeys.contains(r.key()))
         .collect(Resolved.collectByKey);
-    return lockedFromLocal;
   }
 
   private Map<String, Resolved> collectAllResolvedVersions(RangeResolver rangeResolver) {
-    Map<String, Resolved> resolvedFromLocalForVersionChecking = rangeResolver
+    return rangeResolver
         .blacklisted()
         .appendAll(rangeResolver.locked())
         .appendAll(rangeResolver.deprecated())
         .collect(Resolved.collectByKey);
-    return resolvedFromLocalForVersionChecking;
   }
 
   private <K, V> Map<K, V> mergeMaps(Map<K, V> importedDeprecations, Map<K, V> localDeprecations) {
@@ -406,9 +404,8 @@ public class RepositoryResolver {
           .map(Resolve::key);
 
       if (!duplicateResolutions.isEmpty()) {
-        throw new IllegalStateException(String.format(
-            "pom.deps contains duplicate resolution declarations for: %s",
-            duplicateResolutions.mkString(", ")));
+        throw new IllegalStateException("pom.deps contains duplicate resolution declarations for: %s"
+            .formatted(duplicateResolutions.mkString(", ")));
       }
     }
   }
@@ -462,7 +459,7 @@ public class RepositoryResolver {
             .map(r -> r.resolvedFrom().getOrElse(""))
             .collect(Collectors.joining(", "));
         warningLogger.accept(
-            String.format("Duplicate resolution of %s found in: %s", entry.getKey(), resolutionGavs));
+            "Duplicate resolution of %s found in: %s".formatted(entry.getKey(), resolutionGavs));
       }
     }
   }

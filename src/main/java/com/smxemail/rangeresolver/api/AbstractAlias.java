@@ -19,7 +19,7 @@ public abstract class AbstractAlias implements PropertyBased {
   @Override
   @Value.Derived
   public String key() {
-    return String.format("%s:%s", group(), artifact());
+    return "%s:%s".formatted(group(), artifact());
   }
 
   @Override

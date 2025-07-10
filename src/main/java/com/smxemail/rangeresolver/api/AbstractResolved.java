@@ -44,9 +44,9 @@ public abstract class AbstractResolved {
   @Value.Derived
   public String key() {
     if (artifactType().equals(DOCKER)) {
-      return String.format("%s", artifact());
+      return "%s".formatted(artifact());
     } else {
-      return String.format("%s:%s", group(), artifact());
+      return "%s:%s".formatted(group(), artifact());
     }
   }
 
@@ -58,7 +58,7 @@ public abstract class AbstractResolved {
   public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey =
       Collectors.toMap(Resolved::key, Function.identity());
 
-  public static final Map<String, Resolved> mapByKey(List<Resolved> resolveds) {
+  public static Map<String, Resolved> mapByKey(List<Resolved> resolveds) {
     return resolveds.stream().collect(collectByKey);
   }
 }

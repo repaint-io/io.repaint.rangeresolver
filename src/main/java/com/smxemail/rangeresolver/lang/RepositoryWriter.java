@@ -21,7 +21,7 @@ import static com.smxemail.rangeresolver.api.ArtifactType.DOCKER;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
-public class RepositoryWriter {
+public final class RepositoryWriter {
   public static void writeRangeResolveSource(RangeResolver rangeResolver, Writer writer) {
     try (PrintWriter pw = new PrintWriter(writer)) {
       if (!rangeResolver.repositories().isEmpty()) {
@@ -150,4 +150,6 @@ public class RepositoryWriter {
       pw.println(comments);
     }
   }
+
+  private RepositoryWriter() {}
 }

@@ -104,7 +104,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       throw new IllegalStateException("Duplicate alias declaration found in " + sourceReference);
     }
 
-    Collector<PropertyBased, ?, java.util.Map<String, String>> collector =
+    Collector<PropertyBased, ?, Map<String, String>> collector =
         Collectors.toMap(PropertyBased::key, PropertyBased::propertyName);
 
     Map<String, String> propertyNames = resolves.collect(collector);
@@ -181,7 +181,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
       Map<String, String> propertyNames,
       ArtifactInfo artifactInfo,
       java.util.List<RangeResolverParser.CommentContext> comments) {
-    String key = String.format("%s:%s", artifactInfo.group(), artifactInfo.artifact());
+    String key = "%s:%s".formatted(artifactInfo.group(), artifactInfo.artifact());
     String version = artifactInfo.version();
     return Resolved.of(
         comments(comments),
@@ -190,7 +190,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
         artifactInfo.artifact(),
         version,
         none(),
-        propertyNames.getOrDefault(key, String.format(ARTIFACT_VERSION, artifactInfo.artifact())),
+        propertyNames.getOrDefault(key, ARTIFACT_VERSION.formatted(artifactInfo.artifact())),
         Range.fixed(version),
         type);
   }
@@ -213,7 +213,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Function<RangeResolverParser.ImportedContext, Import> resolveImport(
       Set<Allow> allows, Set<Allow> withhelds) {
-    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(p -> p.toString()));
+    TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
 
     Set<Pattern> unlocked = allows.filter(allow -> allow.allowable() == Allowable.UNLOCKED)
         .foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));

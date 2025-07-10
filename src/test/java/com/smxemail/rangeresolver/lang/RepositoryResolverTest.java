@@ -8,7 +8,7 @@ import static com.smxemail.rangeresolver.lang.RepositoryResolver.isNewerVersion;
 
 public class RepositoryResolverTest {
   @Test
-  public void testVersionComparision() {
+  public void versionComparision() {
     assertThat(isNewerVersion("1.0.1", "1.0.2")).isFalse();
     assertThat(isNewerVersion("1.0.1", "1.0.1")).isFalse();
     assertThat(isNewerVersion("1.0.2", "1.0.1")).isTrue();

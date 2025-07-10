@@ -90,23 +90,23 @@ public class RangeResolverStepdefs {
     }
   }
 
-  @Given("^the following base script:$")
+  @Given("the following base script:")
   public void givenTheFollowingBaseScript(String script) throws IOException {
     baseScript = script;
     processResolutionScript(script);
   }
 
-  @Given("^the following raw script:$")
+  @Given("the following raw script:")
   public void givenTheFollowingRawScript(String script) throws IOException {
     processResolutionScript(script);
   }
 
-  @Given("^the following script:$")
+  @Given("the following script:")
   public void givenTheFollowingScript(String script) throws IOException {
     processResolutionScript(baseScript + "\n\n" + script);
   }
 
-  @When("^writing the DSL back out$")
+  @When("writing the DSL back out")
   public void whenWritingTheDSLBackOut() {
     var sw = new StringWriter();
 
@@ -122,7 +122,7 @@ public class RangeResolverStepdefs {
     rangeResolverSource = sw.toString();
   }
 
-  @Then("^it should match the follow script:$")
+  @Then("it should match the follow script:")
   public void itShouldMatchTheFollowScript(String script) throws IOException {
     String delta = deltaDiff(rangeResolverSource.trim(), script.trim());
     assertWithMessage("Expected DSL does not match: " + delta)
@@ -153,7 +153,7 @@ public class RangeResolverStepdefs {
     }
 
     throw new IllegalStateException(
-        String.format("No resolution for %s %s with range %s found.", bounds, artifact, range));
+        "No resolution for %s %s with range %s found.".formatted(bounds, artifact, range));
   }
 
   @Then("^the resolved dependency \"([^\"]*)\" should be resolving against version \"([^\"]*)\"$")
@@ -169,8 +169,7 @@ public class RangeResolverStepdefs {
       }
     }
 
-    throw new IllegalStateException(
-        String.format("No resolution for %s with version %s found.", artifact, version));
+    throw new IllegalStateException("No resolution for %s with version %s found.".formatted(artifact, version));
   }
 
   @Then("^the dependency \"([^\"]*)\" should use the property \"([^\"]*)\"$")
@@ -185,7 +184,7 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolution for %s with alias %s found.", artifact, property));
+    throw new IllegalStateException("No resolution for %s with alias %s found.".formatted(artifact, property));
   }
 
   @And("^the dependency \"([^\"]*)\" should use the classifer \"([^\"]*)\"$")
@@ -196,7 +195,7 @@ public class RangeResolverStepdefs {
       }
     }
     throw new IllegalStateException(
-        String.format("No resolution for %s with classifier %s found.", artifact, classifier));
+        "No resolution for %s with classifier %s found.".formatted(artifact, classifier));
   }
 
   @And("^the dependency \"([^\"]*)\" should use the extension \"([^\"]*)\"$")
@@ -206,8 +205,7 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(
-        String.format("No resolution for %s with extension %s found.", artifact, extension));
+    throw new IllegalStateException("No resolution for %s with extension %s found.".formatted(artifact, extension));
   }
 
   @Then("^the dependency \"([^\"]*)\" should be resolved$")
@@ -217,7 +215,7 @@ public class RangeResolverStepdefs {
         return;
       }
     }
-    throw new IllegalStateException(String.format("No resolved artifact for %s found.", artifact));
+    throw new IllegalStateException("No resolved artifact for %s found.".formatted(artifact));
   }
 
   @Given("^that \"([^\"]*)\" was previously imported$")
@@ -225,7 +223,7 @@ public class RangeResolverStepdefs {
     previousImports.add(imported);
   }
 
-  @Then("^resolving$")
+  @Then("resolving")
   public void resolvingShouldSucceed() {
     try {
       resolutionResult = repositoryResolver.resolveRanges(rangeResolver, IMPORT_REFERENCE, SOURCE_REFERENCE);
@@ -234,7 +232,7 @@ public class RangeResolverStepdefs {
     }
   }
 
-  @Then("^it should succeed$")
+  @Then("it should succeed")
   public void itShouldSucceed() {
     assertWithMessage("It should have succeeded")
         .that(rangeResolverException)
@@ -257,7 +255,7 @@ public class RangeResolverStepdefs {
       }
     }
 
-    throw new IllegalStateException(String.format("No imported artifact for %s found.", artifact));
+    throw new IllegalStateException("No imported artifact for %s found.".formatted(artifact));
   }
 
   @Then("^it should fail with \"([^\"]*)\"$")
@@ -295,7 +293,7 @@ public class RangeResolverStepdefs {
       }
     }
 
-    throw new IllegalStateException(String.format("No resolution of artifact for %s found.", artifact));
+    throw new IllegalStateException("No resolution of artifact for %s found.".formatted(artifact));
   }
 
   private String deltaDiff(String actual, String expected) {
@@ -303,12 +301,12 @@ public class RangeResolverStepdefs {
     return diffMatchPatch.patchToText(diffMatchPatch.patchMake(actual, expected));
   }
 
-  @When("^importing as unlocked$")
+  @When("importing as unlocked")
   public void importingAsUnlocked() {
     rangeResolver = unlockDependencies(rangeResolver, Set(Pattern.compile(".*")));
   }
 
-  @When("^importing as snapshots$")
+  @When("importing as snapshots")
   public void importingAsSnapshots() {
     rangeResolver = snapshotDependencies(rangeResolver, this::warn, Set(Pattern.compile(".*")));
   }
