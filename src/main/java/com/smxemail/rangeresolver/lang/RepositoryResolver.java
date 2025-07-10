@@ -517,7 +517,8 @@ public class RepositoryResolver {
     }
 
     try {
-      RangeResolver resolver = parseRangeResolver(i.gav(), Files.newBufferedReader(artifactFile.toPath()), allowUnlocked, allowSnapshots);
+      RangeResolver resolver = parseRangeResolver(
+          i.gav(), Files.newBufferedReader(artifactFile.toPath()), allowUnlocked, allowSnapshots);
       return snapshotDependencies(resolver, warningLogger, i.snapshots());
     } catch (IOException e) {
       throw new UncheckedIOException(e);

@@ -15,11 +15,15 @@
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <dependency.check.fastfail>false</dependency.check.fastfail>
     <errorProneNullAwayLevel>ERROR</errorProneNullAwayLevel>
+    <mdep.analyze.skip>true</mdep.analyze.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <ratchetFrom>NONE</ratchetFrom>
+    <reformatJavadoc>true</reformatJavadoc>
     <relaxedScopes>.*</relaxedScopes>
     <release>24</release>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
+    <spotless.check.skip>false</spotless.check.skip>
   </properties>
 
   <dependencies>
