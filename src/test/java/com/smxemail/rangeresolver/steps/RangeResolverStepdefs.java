@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -240,11 +242,11 @@ public class RangeResolverStepdefs {
   }
 
   private static File resolveLocalRepository() {
-    File localRepo = new File("/tmp/repository");
-    if (localRepo.exists()) {
-      localRepo.mkdir();
+    try {
+      return Files.createTempDirectory("repository").toFile();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-    return localRepo;
   }
 
   @Then("^the import \"([^\"]*)\" should be declared$")
