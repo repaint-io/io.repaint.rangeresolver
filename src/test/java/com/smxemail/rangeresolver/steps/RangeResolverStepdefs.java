@@ -21,7 +21,7 @@ import com.smxemail.rangeresolver.lang.RepositoryWriter;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -85,7 +85,8 @@ public class RangeResolverStepdefs {
 
   private void processResolutionScript(String script) {
     try {
-      rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, Reader.of(script), "", "");
+      rangeResolver =
+          RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script), "", "");
     } catch (Exception e) {
       e.printStackTrace();
       rangeResolverException = e;
@@ -130,7 +131,7 @@ public class RangeResolverStepdefs {
     assertWithMessage("Expected DSL does not match: " + delta)
         .that(rangeResolverSource.trim())
         .isEqualTo(script.trim());
-    rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, Reader.of(script), "", "");
+    rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, new StringReader(script), "", "");
   }
 
   @Then("^the repository \"([^\"]*)\" should be declared with a grouping of \"([^\"]*)\"$")

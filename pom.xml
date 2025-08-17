@@ -20,7 +20,7 @@
     <ratchetFrom>NONE</ratchetFrom>
     <reformatJavadoc>true</reformatJavadoc>
     <relaxedScopes>.*</relaxedScopes>
-    <release>24</release>
+    <release>23</release>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
     <spotless.check.skip>false</spotless.check.skip>
