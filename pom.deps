@@ -2,7 +2,7 @@
 repository https://nexus.az1.smxk8s.net/repository/maven-releases/;
 repository https://repo1.maven.org/maven2/ as central;
 
-import smx3:smx3.bill-of-materials:3.7.111;
+import smx3:smx3.bill-of-materials:3.7.126;
 
 allow unlocked /^.*smx.*$/;
 
@@ -10,8 +10,8 @@ resolve highest org.antlr:antlr4-maven-plugin:[4.13.2,5.0.0) via central;
 resolve highest org.antlr:antlr4-runtime:[4.13.2,5.0.0) via central;
 resolve highest com.google.truth:truth:[1.4.4,2.0) via central;
 resolve highest io.vavr:vavr:[0.10.7,1.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
-resolve highest io.cucumber:cucumber-java:[7.26.0,8.0.0) via central;
-resolve highest io.cucumber:cucumber-junit:[7.26.0,8.0.0) via central;
+resolve highest io.cucumber:cucumber-java:[7.27.2,8.0.0) via central;
+resolve highest io.cucumber:cucumber-junit:[7.27.2,8.0.0) via central;
 resolve highest com.google.truth.extensions:truth-java8-extension:[1.4.4,2.0.0) via central;
 resolve highest junit:junit:[4.13.2,5.0.0) via central;
 resolve highest org.apache.maven.resolver:maven-resolver-api:[1.9.24,2.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
@@ -26,16 +26,16 @@ resolve highest org.apache.maven:maven-resolver-provider:[3.9.11,4.0.0) via cent
 alias org.immutables:value as immutables.value.version;
 alias com.github.spullara.mustache.java:compiler as mustache.compiler.version;
 
-locked com.diffplug.spotless:spotless-maven-plugin:2.45.0;
+locked com.diffplug.spotless:spotless-maven-plugin:2.46.1;
 locked com.google.guava:failureaccess:1.0.3;
 locked com.google.guava:guava:33.4.8-jre;
 locked com.google.truth.extensions:truth-java8-extension:1.4.4;
 locked com.google.truth:truth:1.4.4;
-locked com.palantir.javaformat:palantir-java-format:2.72.0;
-locked com.smxemail.tiles:com.smxemail.tiles.enforcements:4.0.209;
-locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.112;
-locked io.cucumber:cucumber-java:7.26.0;
-locked io.cucumber:cucumber-junit:7.26.0;
+locked com.palantir.javaformat:palantir-java-format:2.73.0;
+locked com.smxemail.tiles:com.smxemail.tiles.enforcements:4.1.8;
+locked com.smxemail.tiles:com.smxemail.tiles.release:2.2.115;
+locked io.cucumber:cucumber-java:7.27.2;
+locked io.cucumber:cucumber-junit:7.27.2;
 locked io.repaint.maven:tiles-maven-plugin:2.41;
 locked io.vavr:vavr:0.10.7;
 locked junit:junit:4.13.2;
@@ -60,6 +60,6 @@ locked org.apache.maven.resolver:maven-resolver-util:1.9.24;
 locked org.apache.maven:maven-artifact:3.9.11;
 locked org.apache.maven:maven-resolver-provider:3.9.11;
 locked org.bitbucket.cowwoc:diff-match-patch:1.2;
-locked org.immutables:value:2.11.1;
+locked org.immutables:value:2.11.3;
 locked org.jacoco:jacoco-maven-plugin:0.8.13;
 locked org.jspecify:jspecify:1.0.0;
