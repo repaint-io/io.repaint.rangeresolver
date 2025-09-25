@@ -70,6 +70,8 @@ import static io.vavr.API.List;
 import static io.vavr.control.Option.none;
 import static io.vavr.control.Option.some;
 
+import static org.codehaus.plexus.util.CollectionUtils.mergeMaps;
+
 import static com.smxemail.rangeresolver.api.ArtifactType.MAVEN;
 import static com.smxemail.rangeresolver.api.ResolvedType.BLACKLISTED;
 import static com.smxemail.rangeresolver.api.ResolvedType.DEPRECATED;
@@ -282,21 +284,26 @@ public final class RepositoryResolver {
     try {
       var resolved = revolveNamedDockerImage(imageName);
 
-      return resolved.map(image -> {
-        var parts = image.split("@", 2);
-        var artifact = parts[0];
-        var version = parts[1];
-        var range = Range.of("", version, version, "");
-        return Resolved.of(
-            "",
-            ArtifactType.DOCKER,
-            resolve.group(),
-            artifact,
-            version,
-            none(),
-            resolve.propertyName(),
-            range,
-            RESOLVED);
+      return resolved.flatMap(image -> {
+        if (!image.contains("@")) {
+          warningLogger.accept("Unable to resolve image for %s".formatted(imageName, image));
+          return Option.none();
+        } else {
+          var parts = image.split("@", 2);
+          var artifact = parts[0];
+          var version = parts[1];
+          var range = Range.of("", version, version, "");
+          return Option.some(Resolved.of(
+              "",
+              ArtifactType.DOCKER,
+              resolve.group(),
+              artifact,
+              version,
+              none(),
+              resolve.propertyName(),
+              range,
+              RESOLVED));
+        }
       });
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -321,6 +328,7 @@ public final class RepositoryResolver {
         .inputReader();
 
     var resolved = reader.lines().findFirst();
+
     reader.close();
 
     return Option.ofOptional(resolved);
