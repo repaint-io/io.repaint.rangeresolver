@@ -30,7 +30,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.4.8-jre</version>
+      <version>33.5.0-jre</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -157,26 +157,26 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>1.4.4</version>
+      <version>1.4.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.truth.extensions</groupId>
       <artifactId>truth-java8-extension</artifactId>
-      <version>1.4.4</version>
+      <version>1.4.5</version>
       <scope>test</scope>
     </dependency>
     <!-- resolver deps -->
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <version>7.27.2</version>
+      <version>7.29.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit</artifactId>
-      <version>7.27.2</version>
+      <version>7.29.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -202,8 +202,8 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.115]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[4.1.8]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.117]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[4.1.25]</tile>
           </tiles>
         </configuration>
       </plugin>
