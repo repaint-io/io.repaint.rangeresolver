@@ -96,7 +96,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.20"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.21"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
@@ -123,14 +123,14 @@ Feature: Range Resolver
       resolve docker almalinux:8-minimal;
       """
     When resolving
-    Then the resolution of "almalinux" should be "sha256:81465a1679cab5769cd828c0e45b946b3e7d2b590dee0349724ad914c92bc31a"
+    Then the resolution of "almalinux" should be "sha256:6ddc58eb5cab5e3f9a05962a43ba851bec8eca3433f1083aad95775f484a5e2e"
     And the dependency "almalinux" should use the property "almalinux.version"
     And writing the DSL back out
     Then it should match the follow script:
       """
       resolve docker almalinux:8-minimal;
 
-      resolved almalinux@sha256:81465a1679cab5769cd828c0e45b946b3e7d2b590dee0349724ad914c92bc31a;
+      resolved almalinux@sha256:6ddc58eb5cab5e3f9a05962a43ba851bec8eca3433f1083aad95775f484a5e2e;
       """
 
   @docker
