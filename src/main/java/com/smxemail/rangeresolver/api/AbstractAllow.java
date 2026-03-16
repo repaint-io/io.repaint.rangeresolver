@@ -23,7 +23,10 @@ public abstract class AbstractAllow implements Comparable<AbstractAllow> {
 
   @Override
   public int compareTo(AbstractAllow o) {
-    return compare(this, o, comparing(AbstractAllow::allowable).thenComparing(aa -> aa.pattern()
-        .toString()));
+    return compare(
+        this,
+        o,
+        comparing(AbstractAllow::allowable)
+            .thenComparing(aa -> aa.pattern().toString()));
   }
 }
