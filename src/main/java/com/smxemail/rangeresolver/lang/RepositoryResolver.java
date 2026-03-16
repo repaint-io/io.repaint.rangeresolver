@@ -286,7 +286,7 @@ public final class RepositoryResolver {
 
       return resolved.flatMap(image -> {
         if (!image.contains("@")) {
-          warningLogger.accept("Unable to resolve image for %s".formatted(imageName, image));
+          warningLogger.accept("Unable to resolve image for %s".formatted(imageName));
           return Option.none();
         } else {
           var parts = image.split("@", 2);
