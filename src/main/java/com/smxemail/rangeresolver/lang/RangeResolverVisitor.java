@@ -149,8 +149,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
     String grouping = DEFAULT_GROUP;
-    if (rep.respositoryGrouping() != null) {
-      grouping = rep.respositoryGrouping().value().getText();
+    if (rep.repositoryGrouping() != null) {
+      grouping = rep.repositoryGrouping().value().getText();
     }
 
     return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
@@ -164,7 +164,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     if (dockerImage != null) {
       var artifactId = dockerImage.artifactId().getText();
-      var version = "sha256:" + dockerImage.version().getText();
+      var version = dockerImage.digest().getText();
 
       return new ArtifactInfo(ArtifactType.DOCKER, DOCKER_GROUP, artifactId, version);
     } else {
@@ -330,11 +330,16 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
     } else if (context.implicitRange() != null) {
       return Range.fixed(context.implicitRange().getText());
     } else {
+      RangeResolverParser.BoundedRangeContext bounded = context.boundedRange();
       return Range.of(
-          context.boundedRange().lowerBound().getText(),
-          context.boundedRange().lowerBoundValue().getText(),
-          context.boundedRange().upperBoundValue().getText(),
-          context.boundedRange().upperBound().getText());
+          bounded.lowerBound().getText(),
+          bounded.lowerBoundValue() != null
+              ? bounded.lowerBoundValue().getText()
+              : "",
+          bounded.upperBoundValue() != null
+              ? bounded.upperBoundValue().getText()
+              : "",
+          bounded.upperBound().getText());
     }
   }
 

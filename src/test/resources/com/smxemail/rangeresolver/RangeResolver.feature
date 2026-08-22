@@ -59,7 +59,7 @@ Feature: Range Resolver
       """
       resolve lowest com.smxemail:com-smxemail-api:[1.0.0,2.0.0);
 
-      locked com.smxemail:com-smxemail-api:1.0.0 from test;
+      locked com.smxemail:com-smxemail-api:1.0.0;
       """
     Then the dependency "com.smxemail:com-smxemail-api" should be resolving against the "lowest" range "[1.0.0,2.0.0)"
     Then the resolved dependency "com.smxemail:com-smxemail-api" should be resolving against version "1.0.0"
@@ -67,9 +67,66 @@ Feature: Range Resolver
   Scenario: Parse resolved artifact
     Given the following script:
       """
-      resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:1.0.2;
       """
     Then the dependency "com.smxemail:com.smxemail.api:1.0.2" should be resolved
+
+  Scenario: The legacy from clause is no longer part of the language
+    Given the following raw script:
+      """
+      resolved com.smxemail:com.smxemail.api:1.0.2 from com.talios:bill-of-materials:1.0.2;
+      """
+    Then it should fail with "Syntax error in cucumber: line 1:45 mismatched input 'from' expecting ';'"
+
+  Scenario: Syntax errors should fail the parse rather than be silently recovered from
+    Given the following raw script:
+      """
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0)
+      resolve lowest com.smxemail:com.smxemail.impl:[1.0.0,2.0.0);
+      """
+    Then it should fail with "Syntax error in cucumber: line 2:0 mismatched input 'resolve' expecting {'filtering', 'via', ';'}"
+
+  Scenario: Keywords are usable as group, artifact and grouping names
+    Given the following raw script:
+      """
+      repository http://SERVER_HERE/nexus/content/repositories/snapshots as snapshots;
+      resolve lowest com.smxemail:locked:[1.0.0,2.0.0) via snapshots;
+      resolved com.smxemail:docker:1.0.0;
+      """
+    Then it should succeed
+
+  Scenario: Repository URLs may carry a port, credentials and a query string
+    Given the following raw script:
+      """
+      repository https://user:secret@nexus.example.com:8081/repository/releases?foo=bar;
+      repository file:///var/tmp/local-repository;
+      """
+    Then it should succeed
+
+  Scenario: Filtering patterns need not contain regex metacharacters
+    Given the following raw script:
+      """
+      resolve highest com.smxemail:com.smxemail.api:[1.0.0,2.0.0) filtering /release/;
+      resolve highest com.smxemail:com.smxemail.spi:[1.0.0,2.0.0) filtering /^1\.2\.\d{2}$/;
+      """
+    Then it should succeed
+
+  Scenario: Half open version ranges are supported
+    Given the following raw script:
+      """
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,);
+      resolve highest com.smxemail:com.smxemail.spi:(,2.0.0];
+      """
+    Then the dependency "com.smxemail:com.smxemail.api" should be resolving against the "lowest" range "[1.0.0,)"
+    And the dependency "com.smxemail:com.smxemail.spi" should be resolving against the "highest" range "(,2.0.0]"
+
+  Scenario: A script may end with a comment
+    Given the following raw script:
+      """
+      resolve lowest com.smxemail:com.smxemail.api:[1.0.0,2.0.0);
+      // nothing follows this comment
+      """
+    Then it should succeed
 
   Scenario: Resolve resolved artifact with Aether
     Given the following script:
@@ -167,11 +224,11 @@ Feature: Range Resolver
       // comment
       alias com.smxemail:com.smxemail.api as test.prop;
       // comment
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       // comment
-      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      locked com.smxemail:com.smxemail.api:2.0.1;
       // comment
-      deprecated com.smxemail:com.smxemail.spi:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      deprecated com.smxemail:com.smxemail.spi:2.0.1;
       """
     When writing the DSL back out
     Then it should match the follow script:
@@ -211,7 +268,7 @@ Feature: Range Resolver
   Scenario: Importing DSL as unlocked
     Given the following script:
       """
-      locked com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      locked com.smxemail:com.smxemail.api:2.0.1;
       """
     When importing as unlocked
     And writing the DSL back out
@@ -223,7 +280,7 @@ Feature: Range Resolver
   Scenario: Importing DSL as locked
     Given the following script:
       """
-      resolved com.smxemail:com.smxemail.api:2.0.1 from com.talios:bill-of-materials:1.0.2;
+      resolved com.smxemail:com.smxemail.api:2.0.1;
       """
     When writing the DSL back out
     Then it should match the follow script:

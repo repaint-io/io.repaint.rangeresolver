@@ -28,6 +28,10 @@ public abstract class AbstractRange {
 
   @Value.Check
   protected void check() {
+    if (lower().isEmpty() || upper().isEmpty()) {
+      // A half-open range such as [1.0,) or (,2.0] has nothing to compare.
+      return;
+    }
     if (isNewerVersion(lower(), upper())) {
       throw new IllegalArgumentException(
           "Invalid range requested, %s is lower than %s".formatted(upper(), lower()));
