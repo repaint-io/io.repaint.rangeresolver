@@ -1,6 +1,6 @@
 package com.smxemail.rangeresolver.api;
 
-import io.vavr.collection.Set;
+import dev.zazr.collection.Set;
 
 import org.immutables.value.Value;
 

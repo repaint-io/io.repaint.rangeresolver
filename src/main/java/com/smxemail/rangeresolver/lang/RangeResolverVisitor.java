@@ -3,9 +3,9 @@ package com.smxemail.rangeresolver.lang;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import io.vavr.collection.List;
-import io.vavr.collection.Set;
-import io.vavr.collection.TreeSet;
+import dev.zazr.collection.List;
+import dev.zazr.collection.Set;
+import dev.zazr.collection.TreeSet;
 
 import com.smxemail.rangeresolver.RangeResolverBaseVisitor;
 import com.smxemail.rangeresolver.RangeResolverParser;
@@ -33,7 +33,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static io.vavr.control.Option.none;
+import static dev.zazr.control.Option.none;
 
 import static com.smxemail.rangeresolver.api.Allowable.SNAPSHOTS;
 import static com.smxemail.rangeresolver.api.Bound.HIGHEST;

@@ -21,7 +21,7 @@
     <ratchetFrom>NONE</ratchetFrom>
     <reformatJavadoc>true</reformatJavadoc>
     <relaxedScopes>.*</relaxedScopes>
-    <release>23</release>
+    <release>25</release>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
   </properties>
@@ -39,9 +39,9 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>io.vavr</groupId>
-      <artifactId>vavr</artifactId>
-      <version>1.0.1</version>
+      <groupId>dev.zazr</groupId>
+      <artifactId>zazr-core</artifactId>
+      <version>0.1.0</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -212,7 +212,7 @@
         <configuration>
           <tiles>
             <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.129]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[5.0.65]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[5.0.66]</tile>
           </tiles>
         </configuration>
       </plugin>

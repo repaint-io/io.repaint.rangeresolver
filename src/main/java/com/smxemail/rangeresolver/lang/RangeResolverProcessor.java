@@ -13,12 +13,10 @@ import java.io.IOException;
 import java.io.Reader;
 
 public final class RangeResolverProcessor {
-  /**
-   * Parses a range resolver script into its model. Unlike earlier versions, a script that does not parse cleanly is
-   * rejected outright rather than being silently error-recovered into a partial model.
-   *
-   * @throws RangeResolverSyntaxException if the script contains any lexer or parser errors.
-   */
+  /// Parses a range resolver script into its model. Unlike earlier versions, a script that does not parse cleanly is
+  /// rejected outright rather than being silently error-recovered into a partial model.
+  ///
+  /// @throws RangeResolverSyntaxException if the script contains any lexer or parser errors.
   public static RangeResolver parseRangeResolver(
       String sourceReference, Reader reader, String allowUnlocked, String allowSnapshots) throws IOException {
     CharStream charStream = CharStreams.fromReader(reader);

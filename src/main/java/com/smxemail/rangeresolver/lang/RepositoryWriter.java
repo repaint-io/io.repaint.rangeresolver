@@ -1,6 +1,6 @@
 package com.smxemail.rangeresolver.lang;
 
-import io.vavr.collection.List;
+import dev.zazr.collection.List;
 
 import com.smxemail.rangeresolver.api.Alias;
 import com.smxemail.rangeresolver.api.Allow;
@@ -96,7 +96,7 @@ public final class RepositoryWriter {
       for (var group : groupedResolved) {
         pw.println();
 
-        for (Resolved resolved : group._2) {
+        for (Resolved resolved : group._2()) {
           printComments(pw, resolved.comments());
           if (resolved.artifactType() == DOCKER) {
             pw.printf(command + " %s@%s;\n", resolved.artifact(), resolved.version());

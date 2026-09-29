@@ -2,8 +2,8 @@ package com.smxemail.rangeresolver.api;
 
 import com.google.common.collect.Multimap;
 
-import io.vavr.collection.List;
-import io.vavr.collection.Set;
+import dev.zazr.collection.List;
+import dev.zazr.collection.Set;
 
 import org.immutables.value.Value;
 

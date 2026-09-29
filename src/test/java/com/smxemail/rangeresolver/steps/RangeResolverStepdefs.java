@@ -1,5 +1,8 @@
 package com.smxemail.rangeresolver.steps;
 
+import dev.zazr.collection.HashSet;
+import dev.zazr.collection.Vector;
+
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -25,13 +28,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import static com.google.common.truth.Truth.assertWithMessage;
-
-import static io.vavr.API.Set;
 
 import static org.junit.Assert.fail;
 
@@ -47,11 +46,11 @@ public class RangeResolverStepdefs {
 
   private Exception rangeResolverException;
 
-  private List<String> previousImports;
+  private Vector<String> previousImports;
 
-  private List<String> infoMessages;
+  private Vector<String> infoMessages;
 
-  private List<String> warnMessages;
+  private Vector<String> warnMessages;
 
   private String rangeResolverSource;
 
@@ -60,12 +59,12 @@ public class RangeResolverStepdefs {
   private ResolutionResult resolutionResult;
 
   private void info(String message) {
-    infoMessages.add(message);
+    infoMessages = infoMessages.append(message);
     System.out.printf("%s\n", message);
   }
 
   private void warn(String message) {
-    warnMessages.add(message);
+    warnMessages = warnMessages.append(message);
     System.out.printf("%s\n", message);
   }
 
@@ -74,9 +73,9 @@ public class RangeResolverStepdefs {
 
   @Before
   public void beforeScenario() {
-    previousImports = new ArrayList<>();
-    infoMessages = new ArrayList<>();
-    warnMessages = new ArrayList<>();
+    previousImports = Vector.empty();
+    infoMessages = Vector.empty();
+    warnMessages = Vector.empty();
     rangeResolver = null;
     resolutionResult = null;
     rangeResolverException = null;
@@ -161,7 +160,7 @@ public class RangeResolverStepdefs {
 
   @Then("^the resolved dependency \"([^\"]*)\" should be resolving against version \"([^\"]*)\"$")
   public void theResolvedDependencyShouldBeResolvingAgainstTheRange(String artifact, String version) {
-    io.vavr.collection.List<Resolved> allResolved = io.vavr.collection.List.<Resolved>empty()
+    Vector<Resolved> allResolved = Vector.<Resolved>empty()
         .appendAll(rangeResolver.resolved())
         .appendAll(rangeResolver.deprecated())
         .appendAll(rangeResolver.locked());
@@ -223,7 +222,7 @@ public class RangeResolverStepdefs {
 
   @Given("^that \"([^\"]*)\" was previously imported$")
   public void thatWasPreviouslyImported(String imported) {
-    previousImports.add(imported);
+    previousImports = previousImports.append(imported);
   }
 
   @Then("resolving")
@@ -306,11 +305,11 @@ public class RangeResolverStepdefs {
 
   @When("importing as unlocked")
   public void importingAsUnlocked() {
-    rangeResolver = unlockDependencies(rangeResolver, Set(Pattern.compile(".*")));
+    rangeResolver = unlockDependencies(rangeResolver, HashSet.of(Pattern.compile(".*")));
   }
 
   @When("importing as snapshots")
   public void importingAsSnapshots() {
-    rangeResolver = snapshotDependencies(rangeResolver, this::warn, Set(Pattern.compile(".*")));
+    rangeResolver = snapshotDependencies(rangeResolver, this::warn, HashSet.of(Pattern.compile(".*")));
   }
 }

@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Collects lexer and parser errors so that parsing can fail loudly once the whole file is read. */
+/// Collects lexer and parser errors so that parsing can fail loudly once the whole file is read.
 final class SyntaxErrorCollector extends BaseErrorListener {
   private final String sourceReference;
 

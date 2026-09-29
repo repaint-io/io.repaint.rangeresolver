@@ -1,10 +1,10 @@
 package com.smxemail.rangeresolver.lang;
 
-import io.vavr.collection.HashSet;
-import io.vavr.collection.List;
-import io.vavr.collection.Set;
-import io.vavr.collection.TreeSet;
-import io.vavr.control.Option;
+import dev.zazr.collection.HashSet;
+import dev.zazr.collection.List;
+import dev.zazr.collection.Set;
+import dev.zazr.collection.TreeSet;
+import dev.zazr.control.Option;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
@@ -66,9 +66,8 @@ import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Strings.emptyToNull;
 
-import static io.vavr.API.List;
-import static io.vavr.control.Option.none;
-import static io.vavr.control.Option.some;
+import static dev.zazr.control.Option.none;
+import static dev.zazr.control.Option.some;
 
 import static org.codehaus.plexus.util.CollectionUtils.mergeMaps;
 
@@ -176,7 +175,7 @@ public final class RepositoryResolver {
     List<RemoteRepository> repositories =
         buildRepositories(rangeResolver.repositories().values());
 
-    repositorySystem.newResolutionRepositories(session, repositories.toJavaList());
+    repositorySystem.newResolutionRepositories(session, repositories.asJava());
 
     List<RangeResolver> importedResolvers = parseImports(rangeResolver, sourceReference, session, repositories);
 
@@ -242,7 +241,7 @@ public final class RepositoryResolver {
     Map<String, Resolved> resolvedThings = toResolve
         .filter(isResolvable)
         .filter(r -> !deprecatedKeysFromLocal.contains(r.key()))
-        .flatMap(resolveArtifact)
+        .collect(resolveArtifact)
         .collect(Resolved.collectByKey);
 
     Map<String, Resolved> importedBlacklists = filterImported(importedArtifacts, BLACKLISTED);
@@ -250,10 +249,10 @@ public final class RepositoryResolver {
     Map<String, Resolved> importedDeprecations = filterImported(importedArtifacts, DEPRECATED);
 
     Map<String, Resolved> localDeprecations =
-        toResolve.filter(isLocallyDeprecated).flatMap(resolveArtifact).collect(Resolved.collectByKey);
+        toResolve.filter(isLocallyDeprecated).collect(resolveArtifact).collect(Resolved.collectByKey);
 
     Map<String, Resolved> localBlacklists =
-        toResolve.filter(isLocallyBlacklisted).flatMap(resolveArtifact).collect(Resolved.collectByKey);
+        toResolve.filter(isLocallyBlacklisted).collect(resolveArtifact).collect(Resolved.collectByKey);
 
     Map<String, Resolved> deprecatedThings = mergeMaps(importedDeprecations, localDeprecations);
     Map<String, Resolved> blacklistedThings = mergeMaps(importedBlacklists, localBlacklists);
@@ -359,9 +358,9 @@ public final class RepositoryResolver {
   }
 
   private Map<String, Resolved> filterImported(Map<String, Resolved> importedArtifacts, ResolvedType blacklisted) {
-    return io.vavr.collection.HashMap.ofAll(importedArtifacts)
+    return dev.zazr.collection.HashMap.ofAll(importedArtifacts)
         .filterValues(res -> res.resolutionType() == blacklisted)
-        .toJavaMap();
+        .asJavaMap();
   }
 
   private List<Resolved> resolveSortedUniqueLocked(
@@ -397,7 +396,7 @@ public final class RepositoryResolver {
   private void resolveArtifacts(RepositorySystemSession session, List<Resolve> toResolve) {
     List<MetadataRequest> metadataRequests = toResolve.map(this::buildMetaDataRequest);
 
-    repositorySystem.resolveMetadata(session, metadataRequests.toJavaList());
+    repositorySystem.resolveMetadata(session, metadataRequests.asJava());
   }
 
   private void checkForDuplicateResolutions(
@@ -512,7 +511,7 @@ public final class RepositoryResolver {
     Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
     File artifactFile;
 
-    LocalArtifactRequest lar = new LocalArtifactRequest(artifact, repositories.toJavaList(), "");
+    LocalArtifactRequest lar = new LocalArtifactRequest(artifact, repositories.asJava(), "");
     LocalArtifactResult localArtifactResult =
         session.getLocalRepositoryManager().find(session, lar);
     artifactFile = localArtifactResult.getFile();
@@ -533,16 +532,12 @@ public final class RepositoryResolver {
   public static RangeResolver unlockDependencies(RangeResolver resolver, Set<Pattern> unlocked) {
     Predicate<Resolved> isMatchingUnlocked =
         resolved -> matchesAny(unlocked).test(resolved.key());
-    List<Resolved> allResolved = List();
-
-    allResolved = allResolved.appendAll(resolver.locked().filter(isMatchingUnlocked));
+    List<Resolved> allResolved =
+        resolver.locked().filter(isMatchingUnlocked).appendAll(resolver.resolved());
 
     List<Resolved> locked = resolver.locked().filter(isMatchingUnlocked.negate());
 
-    allResolved = allResolved.appendAll(resolver.resolved());
-
-    return resolver.withResolved(sortResolvedThings(allResolved.toJavaList()))
-        .withLocked(sortResolvedThings(locked.toJavaList()));
+    return resolver.withResolved(sortResolvedThings(allResolved)).withLocked(sortResolvedThings(locked));
   }
 
   public static RangeResolver snapshotDependencies(
@@ -655,7 +650,7 @@ public final class RepositoryResolver {
     Artifact artifact = resolveToArtifact(resolve);
     VersionRangeRequest rangeRequest = new VersionRangeRequest();
     rangeRequest.setArtifact(artifact);
-    rangeRequest.setRepositories(repositories.toJavaList());
+    rangeRequest.setRepositories(repositories.asJava());
 
     List<Version> resolvedVersions = List.ofAll(repositorySystem
             .resolveVersionRange(session, rangeRequest)
@@ -668,8 +663,8 @@ public final class RepositoryResolver {
       Range resolvedRange = resolveBoundRange(resolvedVersions);
       Set<ArtifactRequest> resolvedArtifactRequests =
           resovleArtifactRequests(repositories, resolve, resolvedRange);
-      repositorySystem.resolveArtifacts(session, resolvedArtifactRequests.toJavaSet());
-      return Option.of(resolvedRange);
+      repositorySystem.resolveArtifacts(session, resolvedArtifactRequests.asJava());
+      return some(resolvedRange);
     }
   }
 
@@ -681,8 +676,8 @@ public final class RepositoryResolver {
         resolve.group(), resolve.artifact(), resolve.classifier(), resolve.extension(), range.upper());
 
     return HashSet.of(
-        new ArtifactRequest(lowerArtifact, repositories.toJavaList(), ""),
-        new ArtifactRequest(upperAritifact, repositories.toJavaList(), ""));
+        new ArtifactRequest(lowerArtifact, repositories.asJava(), ""),
+        new ArtifactRequest(upperAritifact, repositories.asJava(), ""));
   }
 
   private Range resolveBoundRange(List<Version> versions) {
