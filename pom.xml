@@ -30,7 +30,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>33.7.1-jre</version>
+      <version>33.7.2-jre</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -41,7 +41,7 @@
     <dependency>
       <groupId>dev.zazr</groupId>
       <artifactId>zazr-core</artifactId>
-      <version>0.1.0</version>
+      <version>0.4.0</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.20.0</version>
+      <version>3.21.0</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -86,7 +86,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
-      <version>3.9.16</version>
+      <version>3.10.0</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>3.9.16</version>
+      <version>3.10.0</version>
       <scope>provided</scope>
       <exclusions></exclusions>
     </dependency>
