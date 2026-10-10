@@ -8,14 +8,13 @@ import dev.zazr.control.Option;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.apache.maven.repository.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.LocalArtifactRequest;
@@ -29,10 +28,6 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
-import org.eclipse.aether.transport.file.FileTransporterFactory;
-import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.version.Version;
 import org.jspecify.annotations.Nullable;
 
@@ -146,11 +141,7 @@ public final class RepositoryResolver {
   }
 
   private static RepositorySystem newRepositorySystem() {
-    DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-    locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-    locator.addService(TransporterFactory.class, FileTransporterFactory.class);
-    locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-    return locator.getService(RepositorySystem.class);
+    return new RepositorySystemSupplier().get();
   }
 
   private static RepositorySystemSession newRepositorySystemSession(
