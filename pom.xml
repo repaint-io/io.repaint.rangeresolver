@@ -21,7 +21,7 @@
     <ratchetFrom>NONE</ratchetFrom>
     <reformatJavadoc>true</reformatJavadoc>
     <relaxedScopes>.*</relaxedScopes>
-    <release>25</release>
+    <release>26</release>
     <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
     <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
   </properties>
