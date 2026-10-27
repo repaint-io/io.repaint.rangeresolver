@@ -57,7 +57,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Strings.emptyToNull;
 
@@ -74,6 +73,7 @@ import static com.smxemail.rangeresolver.api.ResolvedType.RESOLVED;
 import static com.smxemail.rangeresolver.lang.Memoizer.memo;
 import static com.smxemail.rangeresolver.lang.RangeResolverProcessor.parseRangeResolver;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
+import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.DEFAULT_GROUP;
 import static com.smxemail.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
 import static java.util.Objects.requireNonNull;
@@ -165,8 +165,6 @@ public final class RepositoryResolver {
       RangeResolver rangeResolver, String resolverReference, String sourceReference) {
     List<RemoteRepository> repositories =
         buildRepositories(rangeResolver.repositories().values());
-
-    repositorySystem.newResolutionRepositories(session, repositories.asJava());
 
     List<RangeResolver> importedResolvers = parseImports(rangeResolver, sourceReference, session, repositories);
 
@@ -438,10 +436,15 @@ public final class RepositoryResolver {
     return List.ofAll(values).sortBy(Resolved::key);
   }
 
+  /**
+   * Build remote repositories, applying the session's mirror, proxy and authentication selectors so that credentials
+   * from {@code settings.xml} are attached.
+   */
   private List<RemoteRepository> buildRepositories(Iterable<Repository> repositories) {
-    return StreamSupport.stream(repositories.spliterator(), false)
+    java.util.List<RemoteRepository> declared = List.ofAll(repositories)
         .map(repo -> buildRepository(repo, updateSnapshots))
-        .collect(List.collector());
+        .asJava();
+    return List.ofAll(repositorySystem.newResolutionRepositories(session, declared));
   }
 
   /**
@@ -721,11 +724,19 @@ public final class RepositoryResolver {
     return new MetadataRequest(new DefaultMetadata(rep.group(), rep.artifact(), Metadata.Nature.RELEASE));
   }
 
+  /**
+   * A named repository ({@code repository <url> as <name>}) uses its name as its id, so it matches the
+   * {@code <server>} and {@code <mirror>} entries in {@code settings.xml}. Unnamed repositories use their URL.
+   */
+  static String repositoryId(AbstractRepository repo) {
+    return repo.grouping().equals(DEFAULT_GROUP) ? repo.url() : repo.grouping();
+  }
+
   private RemoteRepository buildRepository(AbstractRepository repo, boolean updateSnapshots) {
     String updatePolicy =
         updateSnapshots ? RepositoryPolicy.UPDATE_POLICY_ALWAYS : RepositoryPolicy.UPDATE_POLICY_DAILY;
 
-    RemoteRepository.Builder builder = new RemoteRepository.Builder(repo.url(), "default", repo.url())
+    RemoteRepository.Builder builder = new RemoteRepository.Builder(repositoryId(repo), "default", repo.url())
         .setPolicy(new RepositoryPolicy(true, updatePolicy, RepositoryPolicy.CHECKSUM_POLICY_WARN));
 
     return builder.build();
