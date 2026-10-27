@@ -180,14 +180,14 @@ Feature: Range Resolver
       resolve docker almalinux:8-minimal;
       """
     When resolving
-    Then the resolution of "almalinux" should be "sha256:5edccbe0aa69031af6604d963a0d9343241e321c55030be87ede663446a95455"
+    Then the resolution of "almalinux" should be "sha256:3f9b9fdb5957745afcc9269e82c8c43e3140ab8802172967927070c5bc8be907"
     And the dependency "almalinux" should use the property "almalinux.version"
     And writing the DSL back out
     Then it should match the follow script:
       """
       resolve docker almalinux:8-minimal;
 
-      resolved almalinux@sha256:5edccbe0aa69031af6604d963a0d9343241e321c55030be87ede663446a95455;
+      resolved almalinux@sha256:3f9b9fdb5957745afcc9269e82c8c43e3140ab8802172967927070c5bc8be907;
       """
 
   @docker
