@@ -4,15 +4,11 @@
 
   <groupId>com.smxemail</groupId>
   <artifactId>com.smxemail.rangeresolver</artifactId>
-  <version>1.1.55</version>
+  <version>1.1.56-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>com.smxemail.rangeresolver</name>
   <url>http://maven.apache.org</url>
-
-  <scm>
-    <tag>com.smxemail.rangeresolver-1.1.55</tag>
-  </scm>
 
   <properties>
     <allowDeprecatedDependencies>true</allowDeprecatedDependencies>
