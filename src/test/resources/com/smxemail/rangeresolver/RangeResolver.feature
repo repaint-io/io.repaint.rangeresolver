@@ -153,7 +153,7 @@ Feature: Range Resolver
       resolve highest com.fasterxml.jackson.core:jackson-annotations:[2.7.0,3.0.0] filtering /^.*(SNAPSHOT|PR|rc).*$/;
       """
     When resolving
-    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.22"
+    Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.23"
 
   Scenario: Resolution filtering should allow for explicit SNAPSHOT selection from Aether
     Given the following script:
