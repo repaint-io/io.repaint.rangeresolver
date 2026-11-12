@@ -21,7 +21,12 @@ import static io.repaint.rangeresolver.api.ArtifactType.DOCKER;
 import static io.repaint.rangeresolver.lang.RangeResolverVisitor.ALLOW_SNAPSHOTS;
 import static io.repaint.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOTS;
 
+/// Writes a range resolver model back out as script source.
 public final class RepositoryWriter {
+  /// Writes the model as range resolver script source. Non-persistent `allow` and `withhold` rules are omitted.
+  ///
+  /// @param rangeResolver the model to write.
+  /// @param writer the destination, which is closed once written.
   public static void writeRangeResolveSource(RangeResolver rangeResolver, Writer writer) {
     try (PrintWriter pw = new PrintWriter(writer)) {
       if (!rangeResolver.repositories().isEmpty()) {

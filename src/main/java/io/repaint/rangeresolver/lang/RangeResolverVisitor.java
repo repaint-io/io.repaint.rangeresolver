@@ -48,13 +48,21 @@ import static io.repaint.rangeresolver.api.ResolvedType.RESOLVED;
 
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
+/// Builds a [RangeResolver] model from a parsed range resolver script.
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
+  /// The format of the property name a resolved version is published under, given the artifact id.
   public static final String ARTIFACT_VERSION = "%s.version";
 
+  /// A version filter that excludes nothing, letting SNAPSHOT versions through.
   public static final Pattern ALLOW_SNAPSHOTS = Pattern.compile("");
 
+  /// The default version filter, excluding SNAPSHOT versions.
   public static final Pattern FILTER_SNAPSHOTS = Pattern.compile("^.*-SNAPSHOT$");
+
+  /// The grouping used by repositories and resolutions that do not name one.
   public static final String DEFAULT_GROUP = "default";
+
+  /// The grouping used for Docker images.
   public static final String DOCKER_GROUP = "docker";
 
   private final String sourceReference;
@@ -63,6 +71,12 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
   private final String allowSnapshots;
 
+  /// Creates a visitor for one script.
+  ///
+  /// @param sourceReference the location the script was read from, recorded against each resolution request.
+  /// @param allowUnlocked a pattern of artifact keys to unlock, or an empty string for none.
+  /// @param allowSnapshots a pattern of artifact keys allowed to resolve to SNAPSHOT versions, or an empty string
+  /// for none.
   public RangeResolverVisitor(String sourceReference, String allowUnlocked, String allowSnapshots) {
     this.sourceReference = sourceReference;
     this.allowUnlocked = allowUnlocked;

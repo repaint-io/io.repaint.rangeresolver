@@ -10,6 +10,7 @@ public class RangeResolverSyntaxException extends RuntimeException {
   @Serial
   private static final long serialVersionUID = 1L;
 
+  /// The individual syntax errors, in the order the parser reported them.
   private final List<String> errors;
 
   RangeResolverSyntaxException(String message, List<String> errors) {
@@ -18,6 +19,8 @@ public class RangeResolverSyntaxException extends RuntimeException {
   }
 
   /// The individual syntax errors, in the order the parser reported them.
+  ///
+  /// @return the syntax errors.
   public List<String> errors() {
     return errors;
   }

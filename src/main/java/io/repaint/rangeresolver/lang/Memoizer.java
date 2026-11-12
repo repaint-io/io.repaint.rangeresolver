@@ -4,6 +4,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/// Caches the results of a function so each distinct input is computed only once.
+///
+/// @param <T> the input type.
+/// @param <U> the result type.
 public final class Memoizer<T, U> {
   private final Map<T, U> cache = new ConcurrentHashMap<>();
 
@@ -13,6 +17,12 @@ public final class Memoizer<T, U> {
     return input -> cache.computeIfAbsent(input, function);
   }
 
+  /// Wraps a function in a thread-safe cache keyed by its input.
+  ///
+  /// @param function the function to memoize.
+  /// @param <T> the input type.
+  /// @param <U> the result type.
+  /// @return a function that computes each input once and reuses the result.
   public static <T, U> Function<T, U> memo(Function<T, U> function) {
     return new Memoizer<T, U>().doMemoize(function);
   }

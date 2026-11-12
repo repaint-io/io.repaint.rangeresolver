@@ -79,9 +79,12 @@ import static org.codehaus.plexus.util.CollectionUtils.mergeMaps;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+/** Resolves the version ranges in a range resolver model against Maven repositories. */
 public final class RepositoryResolver {
+  /** The classifier of the artifact an {@code import} statement fetches. */
   public static final String BILL_OF_MATERIALS = "bill-of-materials";
 
+  /** The extension of the artifact an {@code import} statement fetches. */
   public static final String DEPS = "deps";
 
   private final Consumer<String> infoLogger;
@@ -110,6 +113,18 @@ public final class RepositoryResolver {
     this.repositorySystem = repositorySystem;
   }
 
+  /**
+   * Creates a resolver with its own repository system, using the given local repository.
+   *
+   * @param infoLogger receives progress messages.
+   * @param warningLogger receives warnings, such as duplicate resolutions.
+   * @param localRepoDir the local repository directory.
+   * @param allowUnlocked a pattern of artifact keys to unlock in imported scripts, or an empty string for none.
+   * @param allowSnapshots a pattern of artifact keys in imported scripts allowed to resolve to SNAPSHOT versions, or
+   *     an empty string for none.
+   * @param updateSnapshots whether to check remote repositories for updates on every resolution rather than daily.
+   * @return the resolver.
+   */
   public static RepositoryResolver createRepositoryResolver(
       Consumer<String> infoLogger,
       Consumer<String> warningLogger,
@@ -128,6 +143,20 @@ public final class RepositoryResolver {
         updateSnapshots);
   }
 
+  /**
+   * Creates a resolver using an existing repository system and session, such as those of a running Maven build.
+   *
+   * @param repositorySystem the repository system to resolve with.
+   * @param session the session, supplying the local repository and {@code settings.xml} mirrors, proxies and
+   *     credentials.
+   * @param infoLogger receives progress messages.
+   * @param warningLogger receives warnings, such as duplicate resolutions.
+   * @param allowUnlocked a pattern of artifact keys to unlock in imported scripts, or an empty string for none.
+   * @param allowSnapshots a pattern of artifact keys in imported scripts allowed to resolve to SNAPSHOT versions, or
+   *     an empty string for none.
+   * @param updateSnapshots whether to check remote repositories for updates on every resolution rather than daily.
+   * @return the resolver.
+   */
   public static RepositoryResolver createRepositoryResolver(
       RepositorySystem repositorySystem,
       RepositorySystemSession session,
@@ -158,8 +187,9 @@ public final class RepositoryResolver {
    * Resolve artifact requests from the resolution model.
    *
    * @param rangeResolver The range resolution model.
+   * @param resolverReference A reference to the resolver being processed, used in log and error messages.
+   * @param sourceReference The location the resolver was loaded from, used to resolve relative imports.
    * @return A list of resolved artifacts
-   * @throws RepositoryException
    */
   public ResolutionResult resolveRanges(
       RangeResolver rangeResolver, String resolverReference, String sourceReference) {
@@ -432,6 +462,12 @@ public final class RepositoryResolver {
         .appendAll(resolver.blacklisted());
   }
 
+  /**
+   * Sorts resolved artifacts by their key.
+   *
+   * @param values the artifacts to sort.
+   * @return the artifacts ordered by key.
+   */
   public static List<Resolved> sortResolvedThings(Iterable<Resolved> values) {
     return List.ofAll(values).sortBy(Resolved::key);
   }
@@ -465,11 +501,23 @@ public final class RepositoryResolver {
     }
   }
 
+  /**
+   * Collects the patterns of a model's {@code allow} rules.
+   *
+   * @param rangeResolver the model.
+   * @return the allow patterns.
+   */
   public static Set<Pattern> allowPatterns(RangeResolver rangeResolver) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
     return rangeResolver.allows().foldLeft(emptyPattens, (patterns, allow) -> patterns.add(allow.pattern()));
   }
 
+  /**
+   * Collects the patterns of a model's {@code withhold} rules.
+   *
+   * @param rangeResolver the model.
+   * @return the withhold patterns.
+   */
   public static Set<Pattern> withheldPatterns(RangeResolver rangeResolver) {
     TreeSet<Pattern> emptyPattens = TreeSet.of(Comparator.comparing(Pattern::toString));
     return rangeResolver
@@ -523,6 +571,13 @@ public final class RepositoryResolver {
     }
   }
 
+  /**
+   * Moves locked artifacts whose keys match any of the patterns into the resolved list, so they are re-resolved.
+   *
+   * @param resolver the model to unlock.
+   * @param unlocked patterns of artifact keys to unlock.
+   * @return the model with matching artifacts unlocked.
+   */
   public static RangeResolver unlockDependencies(RangeResolver resolver, Set<Pattern> unlocked) {
     Predicate<Resolved> isMatchingUnlocked =
         resolved -> matchesAny(unlocked).test(resolved.key());
@@ -534,6 +589,14 @@ public final class RepositoryResolver {
     return resolver.withResolved(sortResolvedThings(allResolved)).withLocked(sortResolvedThings(locked));
   }
 
+  /**
+   * Lets resolution requests whose keys match any of the patterns resolve to SNAPSHOT versions.
+   *
+   * @param importedRangeResolver the model to adjust.
+   * @param warningLogger receives a warning for each request allowed to resolve a SNAPSHOT.
+   * @param snapshots patterns of artifact keys to allow SNAPSHOTs for.
+   * @return the model with matching requests switched to {@link Bound#SNAPSHOT}.
+   */
   public static RangeResolver snapshotDependencies(
       RangeResolver importedRangeResolver, Consumer<String> warningLogger, Set<Pattern> snapshots) {
     Predicate<Resolve> isMatchingSnapshot = resolve -> matchesAny(snapshots).test(resolve.key());
@@ -683,6 +746,13 @@ public final class RepositoryResolver {
     }
   }
 
+  /**
+   * Compares two version strings using Maven version ordering.
+   *
+   * @param first the version to test.
+   * @param second the version to compare against.
+   * @return {@code true} if {@code first} is newer than {@code second}, or if only {@code second} is {@code null}.
+   */
   public static boolean isNewerVersion(@Nullable String first, @Nullable String second) {
     if (second == null && first != null) {
       return true;
@@ -696,6 +766,13 @@ public final class RepositoryResolver {
     return vF.compareTo(vS) > 0;
   }
 
+  /**
+   * Compares the versions of two resolved artifacts using Maven version ordering.
+   *
+   * @param first the artifact to test.
+   * @param second the artifact to compare against.
+   * @return {@code true} if {@code first} is newer than {@code second}, or if only {@code second} is {@code null}.
+   */
   public static boolean isNewerVersion(@Nullable Resolved first, @Nullable Resolved second) {
     if (second == null && first != null) {
       return true;
@@ -742,6 +819,12 @@ public final class RepositoryResolver {
     return builder.build();
   }
 
+  /**
+   * Upper-cases the first character of a word.
+   *
+   * @param word the word, which may be {@code null}.
+   * @return the capitalized word, or an empty string if the word is {@code null} or blank.
+   */
   public static String capitalize(String word) {
     return word == null || word.trim().isEmpty() ? "" : word.substring(0, 1).toUpperCase() + word.substring(1);
   }
