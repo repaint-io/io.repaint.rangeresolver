@@ -4,13 +4,49 @@
 
   <groupId>io.repaint</groupId>
   <artifactId>io.repaint.rangeresolver</artifactId>
-  <version>1.1.57-SNAPSHOT</version>
+  <version>${nisse.jgit.dynamicVersion}</version>
   <packaging>jar</packaging>
 
   <name>io.repaint.rangeresolver</name>
   <url>http://maven.apache.org</url>
 
+ <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>talios</id>
+      <email>mark@talios.com</email>
+      <name>Mark Derricutt</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:repaint-io/io.repaint.rangeresolver</connection>
+    <developerConnection>scm:git:git@github.com:repaint-io/io.repaint.rangeresolver</developerConnection>
+    <url>https://github.com/repaint-io/io.repaint.rangeresolver</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <distributionManagement>
+     <snapshotRepository>
+       <id>sonatype-central-portal</id>
+       <name>sonatype Snapshots</name>
+       <url>https://central.sonatype.com/repository/maven-snapshots</url>
+     </snapshotRepository>
+     <repository>
+       <id>sonatype-central-portal</id>
+       <name>Sonatype Releases</name>
+       <url>https://repo.maven.apache.org/maven2</url>
+     </repository>
+  </distributionManagement>
+
   <properties>
+    <version.njord>0.9.10</version.njord>
     <allowDeprecatedDependencies>true</allowDeprecatedDependencies>
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <dependency.check.fastfail>false</dependency.check.fastfail>
@@ -22,8 +58,6 @@
     <reformatJavadoc>true</reformatJavadoc>
     <relaxedScopes>.*</relaxedScopes>
     <release>26</release>
-    <scmDeveloperConnection>scm:git:ssh://git@gitlab.smxemail.com:dev/com.smxemail.rangeresolver.git</scmDeveloperConnection>
-    <scmUrl>https://gitlab.smxemail.com/dev/com.smxemail.rangeresolver</scmUrl>
   </properties>
 
   <dependencies>
@@ -203,6 +237,23 @@
   </dependencies>
 
   <build>
+     <extensions>
+      <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension3</artifactId>
+        <version>${version.njord}</version>
+      </extension>
+    </extensions>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>eu.maveniverse.maven.plugins</groupId>
+          <artifactId>njord</artifactId>
+          <version>${version.njord}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>io.repaint.maven</groupId>
@@ -211,9 +262,27 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.release:[2.2.134]</tile>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[5.0.84]</tile>
+            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[5.0.86]</tile>
           </tiles>
+        </configuration>
+      </plugin>
+        <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.12.0</version>
+        <executions>
+          <execution>
+            <id>javadoc-for-release</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <additionalOptions>
+            <!-- io.repaint.rangeresolver holds only the ANTLR-generated lexer, parser and visitors. -->
+            <additionalOption>-Xdoclint/package:-io.repaint.rangeresolver</additionalOption>
+          </additionalOptions>
         </configuration>
       </plugin>
       <plugin>
