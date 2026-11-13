@@ -47,10 +47,8 @@
 
   <properties>
     <version.njord>0.9.10</version.njord>
-    <allowDeprecatedDependencies>true</allowDeprecatedDependencies>
     <checkstyle.suppressions.location>checkstyle-supressions.xml</checkstyle.suppressions.location>
     <dependency.check.fastfail>false</dependency.check.fastfail>
-    <errorProneNullAwayLevel>ERROR</errorProneNullAwayLevel>
     <maven.compiler.release>26</maven.compiler.release>
     <mdep.analyze.skip>true</mdep.analyze.skip>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -134,56 +132,56 @@
       <artifactId>maven-resolver-provider</artifactId>
       <version>3.10.0</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-connector-basic</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-impl</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-spi</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-apache</artifactId>
       <version>2.0.24</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
       <version>2.0.25</version>
       <scope>provided</scope>
-      <exclusions></exclusions>
+      <exclusions />
     </dependency>
     <dependency>
       <groupId>org.immutables</groupId>
@@ -262,7 +260,7 @@
         <extensions>true</extensions>
         <configuration>
           <tiles>
-            <tile>com.smxemail.tiles:com.smxemail.tiles.enforcements:[5.0.86]</tile>
+            <tile>io.repaint:io.repaint.tiles.enforcement:[1.0.3]</tile>
           </tiles>
         </configuration>
       </plugin>
