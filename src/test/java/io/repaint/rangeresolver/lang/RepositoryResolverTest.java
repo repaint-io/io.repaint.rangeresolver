@@ -2,7 +2,7 @@ package io.repaint.rangeresolver.lang;
 
 import io.repaint.rangeresolver.api.Repository;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.repaint.rangeresolver.lang.RepositoryResolver.isNewerVersion;
 import static io.repaint.rangeresolver.lang.RepositoryResolver.repositoryId;

@@ -21,9 +21,8 @@ import io.repaint.rangeresolver.api.Resolved;
 import io.repaint.rangeresolver.api.ResolvedType;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.apache.maven.repository.supplier.RepositorySystemSupplier;
-import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.apache.maven.repository.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -33,8 +32,6 @@ import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.LocalArtifactRequest;
 import org.eclipse.aether.repository.LocalArtifactResult;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -45,12 +42,13 @@ import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.version.Version;
 import org.jspecify.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -76,7 +74,6 @@ import static io.repaint.rangeresolver.lang.RangeResolverVisitor.FILTER_SNAPSHOT
 
 import static org.codehaus.plexus.util.CollectionUtils.mergeMaps;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 /** Resolves the version ranges in a range resolver model against Maven repositories. */
@@ -175,12 +172,10 @@ public final class RepositoryResolver {
 
     private static RepositorySystemSession newRepositorySystemSession(
             RepositorySystem repositorySystem, String localRepoDir) {
-        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
-        LocalRepository localRepo = new LocalRepository(localRepoDir);
-        LocalRepositoryManager localRepositoryManager = requireNonNull(
-                repositorySystem.newLocalRepositoryManager(session, localRepo), "Missing Local Repository Manager");
-        session.setLocalRepositoryManager(localRepositoryManager);
-        return session;
+        return new SessionBuilderSupplier(repositorySystem)
+                .get()
+                .withLocalRepositoryBaseDirectories(Path.of(localRepoDir))
+                .build();
     }
 
     /**
@@ -250,8 +245,8 @@ public final class RepositoryResolver {
         Predicate<Resolve> isUpdatedVersion = resolve -> resolveArtifact
                 .apply(resolve)
                 .map(resolved -> resolve.resolveType() == ResolveType.DOCKER
-                        || isNewerVersion(resolved, importedArtifacts.get(resolve.key()))
-                                && isNewerVersion(resolved, resolvedFromLocalForVersionChecking.get(resolve.key())))
+                        || (isNewerVersion(resolved, importedArtifacts.get(resolve.key()))
+                                && isNewerVersion(resolved, resolvedFromLocalForVersionChecking.get(resolve.key()))))
                 .getOrElse(false);
 
         Predicate<Resolve> isResolvable =
@@ -418,6 +413,7 @@ public final class RepositoryResolver {
         repositorySystem.resolveMetadata(session, metadataRequests.asJava());
     }
 
+    @SafeVarargs
     private void checkForDuplicateResolutions(
             List<Resolve> imported, Map<String, Resolve> resolvesFromLocal, Map<String, Resolve>... resolutions) {
         for (Map<String, Resolve> resolveMap : resolutions) {
@@ -551,20 +547,21 @@ public final class RepositoryResolver {
         }
 
         Artifact artifact = new DefaultArtifact(i.group(), i.artifact(), BILL_OF_MATERIALS, DEPS, i.version());
-        File artifactFile;
+        Path artifactPath;
 
         LocalArtifactRequest lar = new LocalArtifactRequest(artifact, repositories.asJava(), "");
         LocalArtifactResult localArtifactResult =
                 session.getLocalRepositoryManager().find(session, lar);
-        artifactFile = localArtifactResult.getFile();
-        if (artifactFile == null) {
+
+        artifactPath = localArtifactResult.getPath();
+        if (artifactPath == null) {
             throw new IllegalArgumentException(
                     "Unable to resolve " + artifact + " in either local or remote repositories.");
         }
 
         try {
-            RangeResolver resolver = parseRangeResolver(
-                    i.gav(), Files.newBufferedReader(artifactFile.toPath()), allowUnlocked, allowSnapshots);
+            RangeResolver resolver =
+                    parseRangeResolver(i.gav(), Files.newBufferedReader(artifactPath), allowUnlocked, allowSnapshots);
             return snapshotDependencies(resolver, warningLogger, i.snapshots());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -662,7 +659,7 @@ public final class RepositoryResolver {
                             && isNewerVersion(boundVersion, previouslyLockedResolution.version())) {
                         infoLogger.accept("%s %s: %s is newer than %s"
                                 .formatted(
-                                        capitalize(resolvedType.name().toLowerCase()),
+                                        capitalize(resolvedType.name().toLowerCase(Locale.ROOT)),
                                         resolve.key(),
                                         boundVersion,
                                         existingVersion));
@@ -825,6 +822,8 @@ public final class RepositoryResolver {
      * @return the capitalized word, or an empty string if the word is {@code null} or blank.
      */
     public static String capitalize(String word) {
-        return word == null || word.trim().isEmpty() ? "" : word.substring(0, 1).toUpperCase() + word.substring(1);
+        return word == null || word.trim().isEmpty()
+                ? ""
+                : word.substring(0, 1).toUpperCase(Locale.ROOT) + word.substring(1);
     }
 }

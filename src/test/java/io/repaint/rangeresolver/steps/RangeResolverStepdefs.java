@@ -27,14 +27,14 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.util.Locale;
 import java.util.regex.Pattern;
-
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static io.repaint.rangeresolver.lang.RepositoryResolver.snapshotDependencies;
 import static io.repaint.rangeresolver.lang.RepositoryResolver.unlockDependencies;
 
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @SuppressWarnings("NullAway")
 public class RangeResolverStepdefs {
@@ -125,8 +125,8 @@ public class RangeResolverStepdefs {
     @Then("it should match the follow script:")
     public void itShouldMatchTheFollowScript(String script) throws IOException {
         String delta = deltaDiff(rangeResolverSource.trim(), script.trim());
-        assertWithMessage("Expected DSL does not match: " + delta)
-                .that(rangeResolverSource.trim())
+        assertThat(rangeResolverSource.trim())
+                .as("Expected DSL does not match: %s", delta)
                 .isEqualTo(script.trim());
         rangeResolver = RangeResolverProcessor.parseRangeResolver(SOURCE_REFERENCE, Reader.of(script), "", "");
     }
@@ -146,7 +146,7 @@ public class RangeResolverStepdefs {
     public void theDependencyShouldBeResolvingAgainstTheRange(String artifact, String bounds, String range) {
         for (Resolve resolve : rangeResolver.resolves()) {
             if (artifact.equals(resolve.key())
-                    && resolve.bounds().toString().toLowerCase().equals(bounds)
+                    && resolve.bounds().toString().toLowerCase(Locale.ROOT).equals(bounds)
                     && resolve.range().asVersionRange().equals(range)) {
                 return;
             }
@@ -234,9 +234,7 @@ public class RangeResolverStepdefs {
 
     @Then("it should succeed")
     public void itShouldSucceed() {
-        assertWithMessage("It should have succeeded")
-                .that(rangeResolverException)
-                .isNull();
+        assertThat(rangeResolverException).as("It should have succeeded").isNull();
     }
 
     private static File resolveLocalRepository() {
@@ -261,17 +259,17 @@ public class RangeResolverStepdefs {
     @Then("^it should fail with \"([^\"]*)\"$")
     public void itShouldFailWith(String message) {
         if (rangeResolverException == null) {
-            fail("The script generated no exceptions, expected: " + message);
+            fail("The script generated no exceptions, expected: %s", message);
         }
-        assertWithMessage("The Script should has expected exception message!")
-                .that(rangeResolverException.getMessage())
+        assertThat(rangeResolverException.getMessage())
+                .as("The Script should has expected exception message!")
                 .isEqualTo(message);
     }
 
     @And("^a warning message \"([^\"]*)\" should be logged$")
     public void aWarningMessageShouldBeLogged(String message) {
-        assertWithMessage("The message \"%s\" was not logged.", message)
-                .that(warnMessages)
+        assertThat(warnMessages)
+                .as("The message \"%s\" was not logged.", message)
                 .contains(message);
     }
 

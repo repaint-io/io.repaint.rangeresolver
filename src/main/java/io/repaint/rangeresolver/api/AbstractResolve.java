@@ -109,7 +109,7 @@ public abstract class AbstractResolve implements PropertyBased {
 
     /// Collects resolution requests into a map keyed by [#key()].
     public static final Collector<Resolve, ?, Map<String, Resolve>> collectByKey =
-            Collectors.toMap(Resolve::key, Function.identity());
+            Collectors.toMap(AbstractResolve::key, Function.identity());
 
     /// Indexes resolution requests by [#key()].
     ///

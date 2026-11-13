@@ -90,7 +90,7 @@ public abstract class AbstractResolved {
 
     /// Collects resolved artifacts into a map keyed by [#key()].
     public static final Collector<Resolved, ?, Map<String, Resolved>> collectByKey =
-            Collectors.toMap(Resolved::key, Function.identity());
+            Collectors.toMap(AbstractResolved::key, Function.identity());
 
     /// Indexes resolved artifacts by [#key()].
     ///

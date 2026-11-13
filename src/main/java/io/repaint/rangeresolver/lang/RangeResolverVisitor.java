@@ -26,6 +26,7 @@ import io.repaint.rangeresolver.api.ResolvedType;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -148,7 +149,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     private Allow resolveAllow(RangeResolverParser.AllowContext rep) {
         Pattern pattern = compileRegexLiteral(rep.REGEX_VALUE().getText());
-        Allowable allowable = Allowable.valueOf(rep.ALLOWABLE().getText().toUpperCase());
+        Allowable allowable = Allowable.valueOf(rep.ALLOWABLE().getText().toUpperCase(Locale.ROOT));
         return Allow.of(comments(rep.comment()), allowable, pattern, true);
     }
 
@@ -293,7 +294,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
             ResolveType resolveType,
             java.util.List<RangeResolverParser.CommentContext> comments) {
         RangeResolverParser.FilteringContext filtering = res.filtering();
-        Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase());
+        Bound bound = Bound.valueOf(res.bounds().getText().toUpperCase(Locale.ROOT));
         Pattern filteringRegex = resolveFilteringPattern(filtering, bound);
 
         String grouping = DEFAULT_GROUP;

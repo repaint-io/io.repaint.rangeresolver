@@ -2,11 +2,9 @@ repository https://repo1.maven.org/maven2/ as central;
 
 resolve highest org.antlr:antlr4-maven-plugin:[4.13.2,5.0.0) via central;
 resolve highest org.antlr:antlr4-runtime:[4.13.2,5.0.0) via central;
-resolve highest com.google.truth:truth:[1.4.5,2.0) via central;
 resolve highest dev.zazr:zazr-core:[0.5.0,1.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
 resolve highest io.cucumber:cucumber-java:[7.34.9,8.0.0) via central;
 resolve highest io.cucumber:cucumber-junit:[7.34.9,8.0.0) via central;
-resolve highest com.google.truth.extensions:truth-java8-extension:[1.4.5,2.0.0) via central;
 resolve highest junit:junit:[4.13.2,5.0.0) via central;
 resolve highest org.apache.maven.resolver:maven-resolver-api:[2.0.25,3.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
 resolve highest org.apache.maven.resolver:maven-resolver-connector-basic:[2.0.25,3.0.0) via central filtering /^.*(ea|alpha|beta|rc|pr|SNAPSHOT).*$/;
@@ -21,13 +19,10 @@ resolve highest io.repaint:io.repaint.tiles.enforcement:[1.0.2,2.0.0);
 alias org.immutables:value as immutables.value.version;
 alias com.github.spullara.mustache.java:compiler as mustache.compiler.version;
 
-resolved io.repaint:io.repaint.tiles.enforcement:1.0.3;
-
-locked com.google.truth.extensions:truth-java8-extension:1.4.5;
-locked com.google.truth:truth:1.4.5;
 locked dev.zazr:zazr-core:0.5.0;
 locked io.cucumber:cucumber-java:7.34.9;
 locked io.cucumber:cucumber-junit:7.34.9;
+locked io.repaint:io.repaint.tiles.enforcement:1.0.3;
 locked junit:junit:4.13.2;
 locked org.antlr:antlr4-maven-plugin:4.13.2;
 locked org.antlr:antlr4-runtime:4.13.2;

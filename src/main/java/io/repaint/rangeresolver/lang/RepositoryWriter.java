@@ -14,6 +14,7 @@ import io.repaint.rangeresolver.api.Resolved;
 
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.Locale;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
@@ -56,7 +57,8 @@ public final class RepositoryWriter {
                 for (Allow allow : rangeResolver.allows()) {
                     if (allow.persistent()) {
                         printComments(pw, allow.comments());
-                        pw.printf("allow %s /%s/;\n", allow.allowable().name().toLowerCase(), allow.pattern());
+                        pw.printf(
+                                "allow %s /%s/;\n", allow.allowable().name().toLowerCase(Locale.ROOT), allow.pattern());
                     }
                 }
             }
@@ -104,9 +106,9 @@ public final class RepositoryWriter {
                 for (Resolved resolved : group._2()) {
                     printComments(pw, resolved.comments());
                     if (resolved.artifactType() == DOCKER) {
-                        pw.printf(command + " %s@%s;\n", resolved.artifact(), resolved.version());
+                        pw.printf("%s %s@%s;\n", command, resolved.artifact(), resolved.version());
                     } else {
-                        pw.printf(command + " %s:%s:%s;\n", resolved.group(), resolved.artifact(), resolved.version());
+                        pw.printf("%s %s:%s:%s;\n", command, resolved.group(), resolved.artifact(), resolved.version());
                     }
                 }
             }
@@ -118,7 +120,7 @@ public final class RepositoryWriter {
             pw.println();
 
             for (Resolve resolve : resolves) {
-                String boundSpec = resolve.bounds().toString().toLowerCase();
+                String boundSpec = resolve.bounds().toString().toLowerCase(Locale.ROOT);
                 String versionRange = resolve.range().asVersionRange();
                 String gav = "%s:%s:%s".formatted(resolve.group(), resolve.artifact(), versionRange);
 
@@ -145,7 +147,7 @@ public final class RepositoryWriter {
 
             for (Resolve resolve : resolveds) {
                 printComments(pw, resolve.comments());
-                pw.printf(command + " %s;\n", resolve.artifact());
+                pw.printf("%s %s;\n", command, resolve.artifact());
             }
         }
     }

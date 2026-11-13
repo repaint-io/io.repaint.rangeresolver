@@ -11,6 +11,7 @@ public class RangeResolverSyntaxException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     /// The individual syntax errors, in the order the parser reported them.
+    @SuppressWarnings("serial") // List.copyOf returns a serializable list.
     private final List<String> errors;
 
     RangeResolverSyntaxException(String message, List<String> errors) {
