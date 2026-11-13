@@ -20,3 +20,8 @@ tags
 **/.approved_files.log
 .approval_tests_temp
 .DS_Store
+
+# Documentation site
+site/node_modules/
+site/dist/
+site/.astro/

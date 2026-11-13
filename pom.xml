@@ -286,6 +286,19 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <markdown>
+            <excludes combine.children="append">
+              <!-- The documentation site has its own toolchain; its node_modules and Starlight-flavoured pages are not CommonMark. -->
+              <exclude>site/**</exclude>
+            </excludes>
+          </markdown>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.antlr</groupId>
         <artifactId>antlr4-maven-plugin</artifactId>
         <version>4.13.2</version>

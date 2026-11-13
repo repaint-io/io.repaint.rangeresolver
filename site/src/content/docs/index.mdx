@@ -1,0 +1,54 @@
+---
+title: Range Resolver
+description: A small language for declaring, resolving and locking Maven dependency versions.
+template: splash
+hero:
+  tagline: Declare the version ranges you accept. Resolve them against your repositories. Lock the answer in a file you can read, diff and share.
+  actions:
+    - text: Get started
+      link: guide/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Explore the language
+      link: language/overview/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+```rangeresolver title="pom.deps"
+repository https://repo1.maven.org/maven2/ as central;
+
+// Accept any 2.x release of Jackson, newest first, but never a release candidate.
+resolve highest com.fasterxml.jackson.core:jackson-databind:[2.17.0,3.0.0) via central filtering /^.*(rc|SNAPSHOT).*$/;
+resolve lowest  org.slf4j:slf4j-api:[2.0.0,3.0.0) via central;
+
+alias com.fasterxml.jackson.core:jackson-databind as jackson.version;
+
+locked com.fasterxml.jackson.core:jackson-databind:2.21.1;
+locked org.slf4j:slf4j-api:2.0.0;
+```
+
+<CardGrid>
+  <Card title="Ranges in, versions out" icon="seti:maven">
+    Each `resolve` statement names a Maven version range and a bound (`lowest`, `highest` or `snapshot`). The resolver
+    asks your repositories which versions exist and picks one.
+  </Card>
+  <Card title="A lock file that stays readable" icon="document">
+    Results are written back into the same script as `resolved` and `locked` records, with your comments intact, so a
+    version bump is a one-line diff.
+  </Card>
+  <Card title="Share a bill of materials" icon="puzzle">
+    `import` another project's published script to inherit its locked versions, and use `allow unlocked` to say which
+    of them you may move forward yourself.
+  </Card>
+  <Card title="Deprecate and blacklist" icon="warning">
+    Mark version ranges as deprecated or blacklisted so downstream builds can warn or fail when they pick them up.
+  </Card>
+  <Card title="Docker images too" icon="seti:docker">
+    `resolve docker almalinux:8-minimal;` pins a tag to its immutable `sha256` digest.
+  </Card>
+  <Card title="Strict by default" icon="approve-check">
+    A script with a syntax error is rejected with the file, line and column, never silently half-parsed.
+  </Card>
+</CardGrid>

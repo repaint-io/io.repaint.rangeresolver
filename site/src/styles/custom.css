@@ -1,0 +1,12 @@
+/* Warm accent to set the site apart from the default Starlight palette. */
+:root {
+  --sl-color-accent-low: #3b1708;
+  --sl-color-accent: #e8590c;
+  --sl-color-accent-high: #ffd8c2;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #ffe3d3;
+  --sl-color-accent: #c2410c;
+  --sl-color-accent-high: #5c1d05;
+}

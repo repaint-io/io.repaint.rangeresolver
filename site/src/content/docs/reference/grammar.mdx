@@ -1,0 +1,19 @@
+---
+title: Grammar
+description: The complete ANTLR 4 grammar for Range Resolver scripts.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import grammar from '../../../../../src/main/antlr4/io/repaint/rangeresolver/RangeResolver.g4?raw';
+
+This is the ANTLR 4 grammar the parser is generated from. It is included directly from
+`src/main/antlr4/io/repaint/rangeresolver/RangeResolver.g4`, so it always matches the published library.
+
+Some notes on reading it:
+
+- `resolver` is the start rule. Statements may appear in **any order** and any number of times.
+- Each statement rule begins with `comment*`. That is how a comment attaches to the statement after it.
+- `identifier` accepts any `keyword`. That is what makes keywords contextual.
+- `implicitRange` (a bare version) is treated as an exact version, the same as `[version]`.
+
+<Code code={grammar} lang="txt" title="RangeResolver.g4" />

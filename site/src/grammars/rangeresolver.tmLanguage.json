@@ -1,0 +1,55 @@
+{
+  "name": "rangeresolver",
+  "displayName": "Range Resolver",
+  "scopeName": "source.rangeresolver",
+  "aliases": ["deps", "pom.deps"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#url" },
+    { "include": "#regex" },
+    { "include": "#statement-keyword" },
+    { "include": "#modifier" },
+    { "include": "#bound" },
+    { "include": "#digest" },
+    { "include": "#range" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.double-slash.rangeresolver",
+      "match": "//.*$"
+    },
+    "url": {
+      "name": "markup.underline.link.rangeresolver",
+      "match": "\\b[a-zA-Z][a-zA-Z0-9+.\\-]*://[^\\s;]*"
+    },
+    "regex": {
+      "name": "string.regexp.rangeresolver",
+      "match": "/(?:[^/\\\\\\r\\n]|\\\\.)+/"
+    },
+    "statement-keyword": {
+      "name": "keyword.control.rangeresolver",
+      "match": "^\\s*\\b(repository|import|allow|withhold|resolve|override|deprecate|blacklist|alias|resolved|locked|deprecated|blacklisted)\\b"
+    },
+    "modifier": {
+      "name": "keyword.other.rangeresolver",
+      "match": "(?<=\\s)\\b(as|via|filtering|docker|snapshots|unlocked)\\b(?=\\s)"
+    },
+    "bound": {
+      "name": "storage.modifier.rangeresolver",
+      "match": "(?<=\\s)\\b(lowest|highest|snapshot)\\b(?=\\s)"
+    },
+    "digest": {
+      "name": "constant.numeric.rangeresolver",
+      "match": "@[a-zA-Z0-9]+:[a-fA-F0-9]+"
+    },
+    "range": {
+      "name": "constant.numeric.rangeresolver",
+      "match": "[\\[(][^\\])\\s;]*[\\])]"
+    },
+    "punctuation": {
+      "name": "punctuation.terminator.rangeresolver",
+      "match": ";"
+    }
+  }
+}
