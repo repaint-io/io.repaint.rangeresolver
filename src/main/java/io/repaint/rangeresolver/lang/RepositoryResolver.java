@@ -39,6 +39,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.MetadataRequest;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.version.Version;
 import org.jspecify.annotations.Nullable;
 
@@ -91,6 +92,7 @@ public final class RepositoryResolver {
     private final boolean updateSnapshots;
     private RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
+    private final ReleaseCooldown releaseCooldown;
 
     private RepositoryResolver(
             RepositorySystem repositorySystem,
@@ -99,9 +101,11 @@ public final class RepositoryResolver {
             Consumer<String> warningLogger,
             String allowUnlocked,
             String allowSnapshots,
-            boolean updateSnapshots) {
+            boolean updateSnapshots,
+            ReleaseCooldown releaseCooldown) {
         this.repositorySystem = repositorySystem;
         this.session = session;
+        this.releaseCooldown = releaseCooldown;
         this.infoLogger = infoLogger;
         this.warningLogger = warningLogger;
         this.allowUnlocked = allowUnlocked;
@@ -137,7 +141,8 @@ public final class RepositoryResolver {
                 warningLogger,
                 allowUnlocked,
                 allowSnapshots,
-                updateSnapshots);
+                updateSnapshots,
+                ReleaseCooldown.disabled());
     }
 
     /**
@@ -163,7 +168,36 @@ public final class RepositoryResolver {
             String allowSnapshots,
             boolean updateSnapshots) {
         return new RepositoryResolver(
-                repositorySystem, session, infoLogger, warningLogger, allowUnlocked, allowSnapshots, updateSnapshots);
+                repositorySystem,
+                session,
+                infoLogger,
+                warningLogger,
+                allowUnlocked,
+                allowSnapshots,
+                updateSnapshots,
+                ReleaseCooldown.disabled());
+    }
+
+    /**
+     * Returns a resolver that holds back versions published within the last {@code cooldownDays} days.
+     *
+     * <p>Publish dates come from the {@code Last-Modified} header of each version's POM. A version whose publish date
+     * cannot be determined is held back.
+     *
+     * @param cooldownDays the number of days a version must have been published before it is resolved, or zero to
+     *     disable the cooldown.
+     * @return the resolver.
+     */
+    public RepositoryResolver withCooldownDays(int cooldownDays) {
+        return new RepositoryResolver(
+                repositorySystem,
+                session,
+                infoLogger,
+                warningLogger,
+                allowUnlocked,
+                allowSnapshots,
+                updateSnapshots,
+                ReleaseCooldown.ofDays(cooldownDays, infoLogger, warningLogger));
     }
 
     private static RepositorySystem newRepositorySystem() {
@@ -705,10 +739,12 @@ public final class RepositoryResolver {
         rangeRequest.setArtifact(artifact);
         rangeRequest.setRepositories(repositories.asJava());
 
-        List<Version> resolvedVersions = List.ofAll(repositorySystem
-                        .resolveVersionRange(session, rangeRequest)
-                        .getVersions())
-                .filter(filterVersion(resolve));
+        VersionRangeResult rangeResult = repositorySystem.resolveVersionRange(session, rangeRequest);
+        List<Version> resolvedVersions = releaseCooldown.apply(
+                session,
+                rangeResult,
+                resolve,
+                List.ofAll(rangeResult.getVersions()).filter(filterVersion(resolve)));
 
         if (resolvedVersions.isEmpty()) {
             return none();
