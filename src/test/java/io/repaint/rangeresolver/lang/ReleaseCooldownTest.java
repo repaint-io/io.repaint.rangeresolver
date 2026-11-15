@@ -12,6 +12,7 @@ import org.apache.maven.repository.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
@@ -76,24 +77,41 @@ class ReleaseCooldownTest {
         assertThat(apply(0, "1.0", "1.1")).containsExactly("1.0", "1.1");
     }
 
+    @Test
+    void asksRemoteRepositoriesForLocallyInstalledVersions() throws Exception {
+        publish("1.0", NOW.minus(Duration.ofDays(30)));
+        publish("1.1", NOW.minus(Duration.ofDays(10)));
+        publish("1.2", NOW.minus(Duration.ofDays(2)));
+
+        // A local install lists the versions in maven-metadata-local.xml, so they are attributed to the local
+        // repository rather than the remote one they were also published to.
+        assertThat(apply(7, true, "1.0", "1.1", "1.2")).containsExactly("1.0", "1.1");
+    }
+
     private java.util.List<String> apply(int days, String... versions) throws InvalidVersionSpecificationException {
+        return apply(days, false, versions);
+    }
+
+    private java.util.List<String> apply(int days, boolean foundLocally, String... versions)
+            throws InvalidVersionSpecificationException {
         RemoteRepository repository =
                 new RemoteRepository.Builder("test", "default", repoDir.toUri().toString()).build();
-        VersionRangeResult rangeResult =
-                new VersionRangeResult(new org.eclipse.aether.resolution.VersionRangeRequest());
+        RepositorySystemSession session = session();
+        VersionRangeRequest request = new VersionRangeRequest().addRepository(repository);
+        VersionRangeResult rangeResult = new VersionRangeResult(request);
         java.util.List<Version> parsed = new ArrayList<>();
         for (String version : versions) {
             Version v = SCHEME.parseVersion(version);
             parsed.add(v);
             rangeResult.addVersion(v);
-            rangeResult.setRepository(v, repository);
+            rangeResult.setRepository(v, foundLocally ? session.getLocalRepository() : repository);
         }
 
         ReleaseCooldown cooldown = days == 0
                 ? ReleaseCooldown.disabled()
                 : new ReleaseCooldown(Duration.ofDays(days), Clock.fixed(NOW, ZoneOffset.UTC), null, s -> {}, s -> {});
 
-        return cooldown.apply(session(), rangeResult, resolve, List.ofAll(parsed))
+        return cooldown.apply(session, rangeResult, resolve, List.ofAll(parsed))
                 .map(Version::toString)
                 .asJava();
     }

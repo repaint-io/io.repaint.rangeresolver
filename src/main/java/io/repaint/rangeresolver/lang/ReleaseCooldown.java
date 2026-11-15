@@ -6,7 +6,6 @@ import dev.zazr.control.Option;
 import io.repaint.rangeresolver.api.Resolve;
 
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.AuthenticationContext;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeResult;
@@ -110,7 +109,7 @@ final class ReleaseCooldown {
         List<Version> remaining = versions;
         while (!remaining.isEmpty()) {
             Version newest = remaining.last();
-            Option<Instant> published = publishedAt(session, rangeResult.getRepository(newest), resolve, newest);
+            Option<Instant> published = publishedAt(session, rangeResult, resolve, newest);
             if (published.isDefined() && !published.get().isAfter(cutoff)) {
                 return remaining;
             }
@@ -127,15 +126,29 @@ final class ReleaseCooldown {
         return remaining;
     }
 
+    /**
+     * Finds the publish time of a version from the remote repository it was found in.
+     *
+     * <p>A version listed in the local repository's own metadata ({@code maven-metadata-local.xml}, written by a local
+     * install) is attributed to the local repository even when it was also published remotely, so for those the
+     * request's remote repositories are asked in order instead.
+     */
     private Option<Instant> publishedAt(
-            RepositorySystemSession session,
-            @Nullable ArtifactRepository repository,
-            Resolve resolve,
-            Version version) {
-        if (!(repository instanceof RemoteRepository remote)) {
-            // Found only in the local repository or workspace, so there is nowhere to ask.
-            return none();
+            RepositorySystemSession session, VersionRangeResult rangeResult, Resolve resolve, Version version) {
+        if (rangeResult.getRepository(version) instanceof RemoteRepository remote) {
+            return publishedAt(session, remote, resolve, version);
         }
+        for (RemoteRepository remote : rangeResult.getRequest().getRepositories()) {
+            Option<Instant> published = publishedAt(session, remote, resolve, version);
+            if (published.isDefined()) {
+                return published;
+            }
+        }
+        return none();
+    }
+
+    private Option<Instant> publishedAt(
+            RepositorySystemSession session, RemoteRepository remote, Resolve resolve, Version version) {
         URI pom = pomUri(remote, resolve, version);
         return publishedCache.computeIfAbsent(pom, uri -> fetchPublished(session, remote, uri));
     }
