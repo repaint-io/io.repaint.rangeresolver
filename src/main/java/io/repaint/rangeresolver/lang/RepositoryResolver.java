@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
@@ -93,6 +94,7 @@ public final class RepositoryResolver {
     private RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
     private final ReleaseCooldown releaseCooldown;
+    private final Option<Duration> cooldownOverride;
 
     private RepositoryResolver(
             RepositorySystem repositorySystem,
@@ -102,10 +104,11 @@ public final class RepositoryResolver {
             String allowUnlocked,
             String allowSnapshots,
             boolean updateSnapshots,
-            ReleaseCooldown releaseCooldown) {
+            Option<Duration> cooldownOverride) {
         this.repositorySystem = repositorySystem;
         this.session = session;
-        this.releaseCooldown = releaseCooldown;
+        this.releaseCooldown = ReleaseCooldown.create(infoLogger, warningLogger);
+        this.cooldownOverride = cooldownOverride;
         this.infoLogger = infoLogger;
         this.warningLogger = warningLogger;
         this.allowUnlocked = allowUnlocked;
@@ -142,7 +145,7 @@ public final class RepositoryResolver {
                 allowUnlocked,
                 allowSnapshots,
                 updateSnapshots,
-                ReleaseCooldown.disabled());
+                none());
     }
 
     /**
@@ -175,20 +178,25 @@ public final class RepositoryResolver {
                 allowUnlocked,
                 allowSnapshots,
                 updateSnapshots,
-                ReleaseCooldown.disabled());
+                none());
     }
 
     /**
-     * Returns a resolver that holds back versions published within the last {@code cooldownDays} days.
+     * Returns a resolver that uses the given cooldown for every repository, in place of the {@code cooldown} declared
+     * on each one.
      *
-     * <p>Publish dates come from the {@code Last-Modified} header of each version's POM. A version whose publish date
-     * cannot be determined is held back.
+     * <p>Without this, each repository uses its own {@code cooldown}, or none. Passing zero turns the cooldown off
+     * everywhere, such as to pick up an urgent fix the day it is released.
      *
-     * @param cooldownDays the number of days a version must have been published before it is resolved, or zero to
-     *     disable the cooldown.
+     * @param cooldownDays the number of days a version must have been published before it is resolved, or zero for no
+     *     cooldown.
      * @return the resolver.
+     * @throws IllegalArgumentException if {@code cooldownDays} is negative.
      */
     public RepositoryResolver withCooldownDays(int cooldownDays) {
+        if (cooldownDays < 0) {
+            throw new IllegalArgumentException("cooldownDays must not be negative: " + cooldownDays);
+        }
         return new RepositoryResolver(
                 repositorySystem,
                 session,
@@ -197,7 +205,7 @@ public final class RepositoryResolver {
                 allowUnlocked,
                 allowSnapshots,
                 updateSnapshots,
-                ReleaseCooldown.ofDays(cooldownDays, infoLogger, warningLogger));
+                some(Duration.ofDays(cooldownDays)));
     }
 
     private static RepositorySystem newRepositorySystem() {
@@ -225,7 +233,10 @@ public final class RepositoryResolver {
         List<RemoteRepository> repositories =
                 buildRepositories(rangeResolver.repositories().values());
 
-        List<RangeResolver> importedResolvers = parseImports(rangeResolver, sourceReference, session, repositories);
+        Function<RemoteRepository, Duration> cooldowns = cooldowns(rangeResolver, cooldownOverride);
+
+        List<RangeResolver> importedResolvers =
+                parseImports(rangeResolver, sourceReference, session, repositories, cooldowns);
 
         Map<String, Resolved> importedArtifacts =
                 importedResolvers.flatMap(this::streamResolvedArtifacts).collect(Resolved.collectByKey);
@@ -267,6 +278,7 @@ public final class RepositoryResolver {
                         resolverReference,
                         session,
                         buildRepositories.apply(resolve),
+                        cooldowns,
                         resolve);
             }
         });
@@ -481,8 +493,9 @@ public final class RepositoryResolver {
             RangeResolver rangeResolver,
             String sourceReference,
             RepositorySystemSession session,
-            List<RemoteRepository> repositories) {
-        return rangeResolver.imports().map(i -> parseImport(sourceReference, session, repositories, i));
+            List<RemoteRepository> repositories,
+            Function<RemoteRepository, Duration> cooldowns) {
+        return rangeResolver.imports().map(i -> parseImport(sourceReference, session, repositories, cooldowns, i));
     }
 
     private List<Resolved> streamResolvedArtifacts(RangeResolver resolver) {
@@ -556,7 +569,11 @@ public final class RepositoryResolver {
     }
 
     private RangeResolver parseImport(
-            String sourceReference, RepositorySystemSession session, List<RemoteRepository> repositories, Import i) {
+            String sourceReference,
+            RepositorySystemSession session,
+            List<RemoteRepository> repositories,
+            Function<RemoteRepository, Duration> cooldowns,
+            Import i) {
         boolean requestSnapshots = i.version().endsWith("-SNAPSHOT");
         Bound importBound = requestSnapshots ? Bound.SNAPSHOT : Bound.HIGHEST;
         Pattern importFilter = requestSnapshots ? ALLOW_SNAPSHOTS : FILTER_SNAPSHOTS;
@@ -575,7 +592,7 @@ public final class RepositoryResolver {
 
         // TODO Make resolveArtifact accept both Resolve and Imported
         try {
-            resolveArtifact(new HashMap<>(), sourceReference, session, repositories, imported);
+            resolveArtifact(new HashMap<>(), sourceReference, session, repositories, cooldowns, imported);
         } catch (IllegalStateException ignored) {
             // ignore
         }
@@ -655,9 +672,10 @@ public final class RepositoryResolver {
             String sourceReference,
             RepositorySystemSession session,
             List<RemoteRepository> repositories,
+            Function<RemoteRepository, Duration> cooldowns,
             Resolve resolve) {
         try {
-            Option<Range> resolvedVersionRange = resolveVersionRange(session, repositories, resolve);
+            Option<Range> resolvedVersionRange = resolveVersionRange(session, repositories, cooldowns, resolve);
 
             if (!resolvedVersionRange.isDefined()) {
                 String repositorySource =
@@ -732,7 +750,10 @@ public final class RepositoryResolver {
     }
 
     private Option<Range> resolveVersionRange(
-            RepositorySystemSession session, List<RemoteRepository> repositories, Resolve resolve)
+            RepositorySystemSession session,
+            List<RemoteRepository> repositories,
+            Function<RemoteRepository, Duration> cooldowns,
+            Resolve resolve)
             throws VersionRangeResolutionException, ArtifactResolutionException {
         Artifact artifact = resolveToArtifact(resolve);
         VersionRangeRequest rangeRequest = new VersionRangeRequest();
@@ -744,7 +765,8 @@ public final class RepositoryResolver {
                 session,
                 rangeResult,
                 resolve,
-                List.ofAll(rangeResult.getVersions()).filter(filterVersion(resolve)));
+                List.ofAll(rangeResult.getVersions()).filter(filterVersion(resolve)),
+                cooldowns);
 
         if (resolvedVersions.isEmpty()) {
             return none();
@@ -839,6 +861,29 @@ public final class RepositoryResolver {
      */
     static String repositoryId(AbstractRepository repo) {
         return repo.grouping().equals(DEFAULT_GROUP) ? repo.url() : repo.grouping();
+    }
+
+    /**
+     * Maps each repository used for resolution to the cooldown declared on it with {@code cooldown <days>}.
+     *
+     * <p>Repositories are matched by id. A mirror takes the longest cooldown of the repositories it mirrors, and a
+     * repository with no declared cooldown has none. An override, when given, applies to every repository instead.
+     */
+    static Function<RemoteRepository, Duration> cooldowns(
+            RangeResolver rangeResolver, Option<Duration> cooldownOverride) {
+        if (cooldownOverride.isDefined()) {
+            Duration cooldown = cooldownOverride.get();
+            return remote -> cooldown;
+        }
+        Map<String, Integer> cooldownDays = new HashMap<>();
+        for (Repository repo : rangeResolver.repositories().values()) {
+            cooldownDays.merge(repositoryId(repo), repo.cooldown(), Math::max);
+        }
+        return remote -> Duration.ofDays(List.of(remote)
+                .appendAll(remote.getMirroredRepositories())
+                .map(r -> cooldownDays.getOrDefault(r.getId(), 0))
+                .max()
+                .getOrElse(0));
     }
 
     private RemoteRepository buildRepository(AbstractRepository repo, boolean updateSnapshots) {

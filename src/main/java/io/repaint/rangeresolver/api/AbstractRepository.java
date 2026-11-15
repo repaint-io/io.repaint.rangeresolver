@@ -2,7 +2,8 @@ package io.repaint.rangeresolver.api;
 
 import org.immutables.value.Value;
 
-/// A `repository url [as grouping];` statement declaring a remote Maven repository.
+/// A `repository url [as grouping] [cooldown days];` statement declaring a remote
+/// Maven repository.
 @Value.Immutable
 public abstract class AbstractRepository {
     AbstractRepository() {}
@@ -24,4 +25,11 @@ public abstract class AbstractRepository {
     /// @return the grouping name, `default` if none was given.
     @Value.Parameter
     public abstract String grouping();
+
+    /// The number of days a version must have been published in this repository
+    /// before it is resolved, declared with `cooldown`.
+    ///
+    /// @return the cooldown in days, `0` if none was given.
+    @Value.Parameter
+    public abstract int cooldown();
 }

@@ -1,5 +1,7 @@
 package io.repaint.rangeresolver.lang;
 
+import com.google.common.base.Suppliers;
+
 import dev.zazr.collection.List;
 import dev.zazr.control.Option;
 
@@ -30,11 +32,17 @@ import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static dev.zazr.control.Option.none;
 import static dev.zazr.control.Option.some;
 
 /// Holds back versions published less than a cooldown period ago.
+///
+/// Each repository carries its own cooldown, declared with `repository <url> cooldown <days>;`. A version is held back
+/// using the cooldown of the repository it was found in, so a trusted internal repository can have no cooldown while
+/// a public one does.
 ///
 /// Maven metadata carries no per-version dates, so the publish time of a version is taken from the `Last-Modified`
 /// header of its POM, fetched with a `HEAD` request against the repository the version was found in. For `file:`
@@ -45,51 +53,37 @@ import static dev.zazr.control.Option.some;
 /// Note that a proxying repository manager may report when it cached the POM rather than when it was published
 /// upstream, which makes versions appear newer than they are.
 final class ReleaseCooldown {
-    private static final ReleaseCooldown DISABLED =
-            new ReleaseCooldown(Duration.ZERO, Clock.systemUTC(), null, s -> {}, s -> {});
-
-    private final Duration cooldown;
     private final Clock clock;
-    private final @Nullable HttpClient httpClient;
+    private final Supplier<@Nullable HttpClient> httpClient;
     private final Consumer<String> infoLogger;
     private final Consumer<String> warningLogger;
     private final ConcurrentMap<URI, Option<Instant>> publishedCache = new ConcurrentHashMap<>();
 
     ReleaseCooldown(
-            Duration cooldown,
             Clock clock,
-            @Nullable HttpClient httpClient,
+            Supplier<@Nullable HttpClient> httpClient,
             Consumer<String> infoLogger,
             Consumer<String> warningLogger) {
-        this.cooldown = cooldown;
         this.clock = clock;
         this.httpClient = httpClient;
         this.infoLogger = infoLogger;
         this.warningLogger = warningLogger;
     }
 
-    static ReleaseCooldown disabled() {
-        return DISABLED;
-    }
-
-    static ReleaseCooldown ofDays(int days, Consumer<String> infoLogger, Consumer<String> warningLogger) {
-        if (days <= 0) {
-            return DISABLED;
-        }
+    /// Creates a cooldown that checks publish dates over HTTP. The HTTP client is only created once a repository with a
+    /// cooldown is queried.
+    static ReleaseCooldown create(Consumer<String> infoLogger, Consumer<String> warningLogger) {
         // TODO: honour the session's ProxySelector; java.net.http only supports a proxy per client.
-        HttpClient client = HttpClient.newBuilder()
+        Supplier<@Nullable HttpClient> client = Suppliers.memoize(() -> HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .connectTimeout(Duration.ofSeconds(30))
-                .build();
-        return new ReleaseCooldown(Duration.ofDays(days), Clock.systemUTC(), client, infoLogger, warningLogger);
-    }
-
-    boolean isEnabled() {
-        return !cooldown.isZero() && !cooldown.isNegative();
+                .build());
+        return new ReleaseCooldown(Clock.systemUTC(), client, infoLogger, warningLogger);
     }
 
     /**
-     * Drops versions from the top of the list until the newest remaining one is outside the cooldown.
+     * Drops versions from the top of the list until the newest remaining one is outside the cooldown of the repository
+     * it was found in.
      *
      * <p>Only the top of the list is checked, so a version that sorts lower but was published more recently (such as a
      * backport release) is not held back. This keeps the cost to one request per version dropped, plus one.
@@ -98,32 +92,54 @@ final class ReleaseCooldown {
      * @param rangeResult the range resolution the versions came from, giving the repository of each version.
      * @param resolve the request being resolved.
      * @param versions the candidate versions, oldest first.
+     * @param cooldownOf the cooldown of each repository, {@link Duration#ZERO} for none.
      * @return the versions that remain, oldest first.
      */
     List<Version> apply(
-            RepositorySystemSession session, VersionRangeResult rangeResult, Resolve resolve, List<Version> versions) {
-        if (!isEnabled()) {
+            RepositorySystemSession session,
+            VersionRangeResult rangeResult,
+            Resolve resolve,
+            List<Version> versions,
+            Function<RemoteRepository, Duration> cooldownOf) {
+        List<RemoteRepository> repositories =
+                List.ofAll(rangeResult.getRequest().getRepositories());
+        if (!repositories.exists(repository -> isActive(cooldownOf.apply(repository)))) {
             return versions;
         }
-        Instant cutoff = clock.instant().minus(cooldown);
+        Instant now = clock.instant();
         List<Version> remaining = versions;
         while (!remaining.isEmpty()) {
             Version newest = remaining.last();
-            Option<Instant> published = publishedAt(session, rangeResult, resolve, newest);
-            if (published.isDefined() && !published.get().isAfter(cutoff)) {
+            Publication publication = publication(session, rangeResult, repositories, resolve, newest, cooldownOf);
+            if (!publication.isHeldBack(now)) {
                 return remaining;
             }
-            infoLogger.accept("Holding back %s:%s, %s"
-                    .formatted(
-                            resolve.key(),
-                            newest,
-                            published
-                                    .map(p ->
-                                            "published %s, within the %d day cooldown".formatted(p, cooldown.toDays()))
-                                    .getOrElse("publish date unknown")));
+            infoLogger.accept("Holding back %s:%s, %s".formatted(resolve.key(), newest, publication.reason()));
             remaining = remaining.init();
         }
         return remaining;
+    }
+
+    private static boolean isActive(Duration cooldown) {
+        return !cooldown.isZero() && !cooldown.isNegative();
+    }
+
+    /// When a version was published, and the cooldown that applies to it.
+    ///
+    /// @param cooldown the cooldown of the repository the version was found in.
+    /// @param at the publish time, empty if it is unknown or was not needed because there is no cooldown.
+    private record Publication(Duration cooldown, Option<Instant> at) {
+        boolean isHeldBack(Instant now) {
+            return isActive(cooldown)
+                    && at.map(p -> p.isAfter(now.minus(cooldown))).getOrElse(true);
+        }
+
+        /// Describes why the version is held back, for logging.
+        String reason() {
+            var cooldownDays = cooldown.toDays();
+            return at.map(p -> "published %s, within the %d day cooldown".formatted(p, cooldownDays))
+                    .getOrElse("publish date unknown");
+        }
     }
 
     /**
@@ -131,20 +147,30 @@ final class ReleaseCooldown {
      *
      * <p>A version listed in the local repository's own metadata ({@code maven-metadata-local.xml}, written by a local
      * install) is attributed to the local repository even when it was also published remotely, so for those the
-     * request's remote repositories are asked in order instead.
+     * request's remote repositories are asked in order instead, and the cooldown of the first one that has it applies.
+     * If none has it, the longest cooldown of the request's repositories applies.
      */
-    private Option<Instant> publishedAt(
-            RepositorySystemSession session, VersionRangeResult rangeResult, Resolve resolve, Version version) {
+    private Publication publication(
+            RepositorySystemSession session,
+            VersionRangeResult rangeResult,
+            List<RemoteRepository> repositories,
+            Resolve resolve,
+            Version version,
+            Function<RemoteRepository, Duration> cooldownOf) {
         if (rangeResult.getRepository(version) instanceof RemoteRepository remote) {
-            return publishedAt(session, remote, resolve, version);
+            Duration cooldown = cooldownOf.apply(remote);
+            return isActive(cooldown)
+                    ? new Publication(cooldown, publishedAt(session, remote, resolve, version))
+                    : new Publication(cooldown, none());
         }
-        for (RemoteRepository remote : rangeResult.getRequest().getRepositories()) {
+        for (RemoteRepository remote : repositories) {
             Option<Instant> published = publishedAt(session, remote, resolve, version);
             if (published.isDefined()) {
-                return published;
+                return new Publication(cooldownOf.apply(remote), published);
             }
         }
-        return none();
+        Duration longest = repositories.map(cooldownOf).max().getOrElse(Duration.ZERO);
+        return new Publication(longest, none());
     }
 
     private Option<Instant> publishedAt(
@@ -169,7 +195,8 @@ final class ReleaseCooldown {
                 return none();
             }
         }
-        if (httpClient == null) {
+        HttpClient client = httpClient.get();
+        if (client == null) {
             return none();
         }
 
@@ -179,7 +206,7 @@ final class ReleaseCooldown {
         basicAuthorization(session, repository).forEach(header -> request.header("Authorization", header));
 
         try {
-            HttpResponse<Void> response = httpClient.send(request.build(), HttpResponse.BodyHandlers.discarding());
+            var response = client.send(request.build(), HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() / 100 != 2) {
                 warningLogger.accept(
                         "Unable to read the publish date of %s: HTTP %d".formatted(pom, response.statusCode()));

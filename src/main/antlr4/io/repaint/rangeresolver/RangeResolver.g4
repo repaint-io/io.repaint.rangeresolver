@@ -4,7 +4,7 @@ grammar RangeResolver;
 // them; any comments left over at the end of the file are accepted and discarded.
 resolver: ( repository | allow | withhold | imported | override | resolve | deprecate | blacklist | alias | resolved | deprecated | blacklisted | locked )* comment* EOF;
 
-repository: comment*  REPOSITORY href repositoryGrouping? SEMI;
+repository: comment*  REPOSITORY href repositoryGrouping? cooldown? SEMI;
 allow: comment* ALLOW ALLOWABLE REGEX_VALUE SEMI;
 withhold: comment* WITHHOLD REGEX_VALUE SEMI;
 imported: comment* IMPORT resolvedArtifact SEMI;
@@ -26,6 +26,7 @@ blacklisted: comment* BLACKLISTED resolvedArtifact SEMI;
 comment: COMMENT;
 repositoryGrouping: AS value;
 resolutionGrouping: VIA value;
+cooldown: COOLDOWN value;
 aliasValue: AS value;
 href: URL;
 bounds: BOUNDS;
@@ -75,6 +76,7 @@ keyword:
   | DEPRECATED
   | BLACKLISTED
   | VIA
+  | COOLDOWN
   | AS
   | BOUNDS
   ;
@@ -97,6 +99,7 @@ DEPRECATED: 'deprecated';
 BLACKLISTED: 'blacklisted';
 VIA: 'via';
 AS: 'as';
+COOLDOWN: 'cooldown';
 BOUNDS: ( LOWEST | HIGHEST | SNAPSHOT );
 
 // A comment runs to the end of the line but does not consume the line terminator,

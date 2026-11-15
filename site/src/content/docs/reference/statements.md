@@ -9,7 +9,7 @@ Square brackets mark optional parts. `<regex>` is always written between slashes
 
 | Statement | Syntax | Notes |
 | --- | --- | --- |
-| repository | `repository <url> [as <name>];` | `<name>` is the grouping and the repository id. It defaults to the `default` grouping, with the URL as the id. [More](../../language/repositories/) |
+| repository | `repository <url> [as <name>] [cooldown <days>];` | `<name>` is the grouping and the repository id. It defaults to the `default` grouping, with the URL as the id. `<days>` holds back versions published more recently than that. [More](../../language/repositories/) |
 | import | `import <group>:<artifact>:<version>;` | Fetches `<group>:<artifact>:<version>:bill-of-materials@deps`. Duplicates are an error. [More](../../language/imports/) |
 | allow unlocked | `allow unlocked /<regex>/;` | Imported requests with matching keys may be re-resolved. [More](../../language/imports/#allow-unlocked) |
 | allow snapshots | `allow snapshots /<regex>/;` | Imported requests with matching keys use the `snapshot` bound. [More](../../language/imports/#allow-snapshots) |
@@ -70,5 +70,5 @@ blacklisted <group>:<artifact>:<version>;     blacklisted <image>@<algo>:<digest
 
 None of these words is reserved. Each can also appear as a group id, artifact id, version or name.
 
-`alias` `allow` `as` `blacklist` `blacklisted` `deprecate` `deprecated` `docker` `filtering` `highest` `import`
+`alias` `allow` `as` `blacklist` `blacklisted` `cooldown` `deprecate` `deprecated` `docker` `filtering` `highest` `import`
 `locked` `lowest` `override` `repository` `resolve` `resolved` `snapshot` `snapshots` `unlocked` `via` `withhold`

@@ -65,14 +65,13 @@ Inside a Maven plugin or extension, pass the build's own `RepositorySystem` and 
 other `createRepositoryResolver` overload. Resolution then honours the user's `settings.xml` mirrors, proxies and
 credentials.
 
-To hold back versions published in the last few days, call `withCooldownDays` on the resolver. It returns a new
-resolver and leaves the original unchanged:
+Each repository uses the [release cooldown](../../language/repositories/#release-cooldown) declared on it. To use one
+cooldown for every repository instead, call `withCooldownDays`. It returns a new resolver and leaves the original
+unchanged:
 
 ```java
-RepositoryResolver cautious = resolver.withCooldownDays(7);
+RepositoryResolver urgent = resolver.withCooldownDays(0);
 ```
-
-See [Release cooldown](../maven/#release-cooldown) for how publish dates are found and when a version is held back.
 
 ## Writing
 

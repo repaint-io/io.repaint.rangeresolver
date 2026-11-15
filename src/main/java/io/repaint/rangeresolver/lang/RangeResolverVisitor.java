@@ -51,7 +51,8 @@ import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
 /// Builds a [RangeResolver] model from a parsed range resolver script.
 public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver> {
-    /// The format of the property name a resolved version is published under, given the artifact id.
+    /// The format of the property name a resolved version is published under, given
+    /// the artifact id.
     public static final String ARTIFACT_VERSION = "%s.version";
 
     /// A version filter that excludes nothing, letting SNAPSHOT versions through.
@@ -74,10 +75,13 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     /// Creates a visitor for one script.
     ///
-    /// @param sourceReference the location the script was read from, recorded against each resolution request.
-    /// @param allowUnlocked a pattern of artifact keys to unlock, or an empty string for none.
-    /// @param allowSnapshots a pattern of artifact keys allowed to resolve to SNAPSHOT versions, or an empty string
-    /// for none.
+    /// @param sourceReference the location the script was read from, recorded
+    ///                        against each resolution request.
+    /// @param allowUnlocked   a pattern of artifact keys to unlock, or an empty
+    ///                        string for none.
+    /// @param allowSnapshots  a pattern of artifact keys allowed to resolve to
+    ///                        SNAPSHOT versions, or an empty string
+    ///                        for none.
     public RangeResolverVisitor(String sourceReference, String allowUnlocked, String allowSnapshots) {
         this.sourceReference = sourceReference;
         this.allowUnlocked = allowUnlocked;
@@ -164,11 +168,16 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
 
     private Repository resolveRepository(RangeResolverParser.RepositoryContext rep) {
         String grouping = DEFAULT_GROUP;
+        int cooldown = 0;
+
         if (rep.repositoryGrouping() != null) {
             grouping = rep.repositoryGrouping().value().getText();
         }
+        if (rep.cooldown() != null) {
+            cooldown = Integer.parseInt(rep.cooldown().value().getText());
+        }
 
-        return Repository.of(comments(rep.comment()), rep.href().getText(), grouping);
+        return Repository.of(comments(rep.comment()), rep.href().getText(), grouping, cooldown);
     }
 
     record ArtifactInfo(ArtifactType type, String group, String artifact, String version) {}

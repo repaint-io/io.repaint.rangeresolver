@@ -11,6 +11,7 @@ import org.apache.maven.repository.supplier.RepositorySystemSupplier;
 import org.apache.maven.repository.supplier.SessionBuilderSupplier;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResult;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,35 +90,88 @@ class ReleaseCooldownTest {
         assertThat(apply(7, true, "1.0", "1.1", "1.2")).containsExactly("1.0", "1.1");
     }
 
+    @Test
+    void usesTheCooldownOfTheRepositoryEachVersionWasFoundIn() throws Exception {
+        Path trusted = repoDir.resolve("trusted");
+        publish("1.0", NOW.minus(Duration.ofDays(30)));
+        publish("1.1", NOW.minus(Duration.ofDays(2)));
+        publish(trusted, "1.2", NOW.minus(Duration.ofDays(1)));
+
+        RemoteRepository cautious = repository("cautious", repoDir);
+        RemoteRepository internal = repository("internal", trusted);
+        Function<RemoteRepository, Duration> cooldowns =
+                r -> r.getId().equals("cautious") ? Duration.ofDays(7) : Duration.ZERO;
+
+        // 1.2 comes from a repository with no cooldown, so it is kept without its publish date being checked.
+        assertThat(apply(cooldowns, java.util.Map.of("1.0", cautious, "1.1", cautious, "1.2", internal)))
+                .containsExactly("1.0", "1.1", "1.2");
+
+        // Without 1.2, 1.1 is within the cooldown of the repository it was found in.
+        assertThat(apply(cooldowns, java.util.Map.of("1.0", cautious, "1.1", cautious)))
+                .containsExactly("1.0");
+    }
+
+    @Test
+    void keepsVersionsWithUnknownPublishDatesFromRepositoriesWithoutACooldown() throws Exception {
+        // No POMs are published, so any date lookup would fail and hold the versions back.
+        assertThat(apply(0, true, "1.0", "1.1")).containsExactly("1.0", "1.1");
+    }
+
     private java.util.List<String> apply(int days, String... versions) throws InvalidVersionSpecificationException {
         return apply(days, false, versions);
     }
 
     private java.util.List<String> apply(int days, boolean foundLocally, String... versions)
             throws InvalidVersionSpecificationException {
-        RemoteRepository repository =
-                new RemoteRepository.Builder("test", "default", repoDir.toUri().toString()).build();
+        RemoteRepository repository = repository("test", repoDir);
         RepositorySystemSession session = session();
-        VersionRangeRequest request = new VersionRangeRequest().addRepository(repository);
+        java.util.Map<String, ArtifactRepository> found = new java.util.LinkedHashMap<>();
+        for (String version : versions) {
+            found.put(version, foundLocally ? session.getLocalRepository() : repository);
+        }
+        return apply(session, java.util.List.of(repository), r -> Duration.ofDays(days), found);
+    }
+
+    private java.util.List<String> apply(
+            Function<RemoteRepository, Duration> cooldowns, java.util.Map<String, RemoteRepository> found)
+            throws InvalidVersionSpecificationException {
+        java.util.List<RemoteRepository> repositories = new ArrayList<>(new java.util.LinkedHashSet<>(found.values()));
+        return apply(session(), repositories, cooldowns, new java.util.TreeMap<String, ArtifactRepository>(found));
+    }
+
+    private java.util.List<String> apply(
+            RepositorySystemSession session,
+            java.util.List<RemoteRepository> repositories,
+            Function<RemoteRepository, Duration> cooldowns,
+            java.util.Map<String, ArtifactRepository> found)
+            throws InvalidVersionSpecificationException {
+        VersionRangeRequest request = new VersionRangeRequest().setRepositories(repositories);
         VersionRangeResult rangeResult = new VersionRangeResult(request);
         java.util.List<Version> parsed = new ArrayList<>();
-        for (String version : versions) {
-            Version v = SCHEME.parseVersion(version);
+        for (java.util.Map.Entry<String, ArtifactRepository> entry : found.entrySet()) {
+            Version v = SCHEME.parseVersion(entry.getKey());
             parsed.add(v);
             rangeResult.addVersion(v);
-            rangeResult.setRepository(v, foundLocally ? session.getLocalRepository() : repository);
+            rangeResult.setRepository(v, entry.getValue());
         }
+        parsed.sort(null);
 
-        ReleaseCooldown cooldown = days == 0
-                ? ReleaseCooldown.disabled()
-                : new ReleaseCooldown(Duration.ofDays(days), Clock.fixed(NOW, ZoneOffset.UTC), null, s -> {}, s -> {});
+        ReleaseCooldown cooldown = new ReleaseCooldown(Clock.fixed(NOW, ZoneOffset.UTC), () -> null, s -> {}, s -> {});
 
-        return cooldown.apply(session, rangeResult, resolve, List.ofAll(parsed))
+        return cooldown.apply(session, rangeResult, resolve, List.ofAll(parsed), cooldowns)
                 .map(Version::toString)
                 .asJava();
     }
 
+    private static RemoteRepository repository(String id, Path dir) {
+        return new RemoteRepository.Builder(id, "default", dir.toUri().toString()).build();
+    }
+
     private void publish(String version, Instant publishedAt) throws IOException {
+        publish(repoDir, version, publishedAt);
+    }
+
+    private static void publish(Path repoDir, String version, Instant publishedAt) throws IOException {
         Path pom = repoDir.resolve("com/example/widget/%s/widget-%s.pom".formatted(version, version));
         Files.createDirectories(pom.getParent());
         Files.writeString(pom, "<project/>");

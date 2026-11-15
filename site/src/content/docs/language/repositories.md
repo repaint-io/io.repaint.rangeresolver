@@ -4,7 +4,7 @@ description: Declaring the Maven repositories a script resolves against.
 ---
 
 ```text
-repository <url> [as <name>];
+repository <url> [as <name>] [cooldown <days>];
 ```
 
 A `repository` statement adds a Maven repository to search.
@@ -59,6 +59,54 @@ that id:
   </server>
 </servers>
 ```
+
+## Release cooldown
+
+To avoid picking up a release the day it ships, add `cooldown <days>` to a repository. Versions found in that
+repository that were published within that many days are held back, and each range resolves to the newest version
+that is old enough:
+
+```rangeresolver
+repository https://repo1.maven.org/maven2/ cooldown 7;
+repository https://repo.example.com/releases/ as internal;
+```
+
+The cooldown belongs to the repository, so you can hold back releases from a public repository while picking up
+your own internal releases straight away. A repository without a `cooldown` clause has none. Where a mirror in
+`settings.xml` stands in for several repositories, it uses the longest of their cooldowns.
+
+Maven metadata doesn't record when each version was published, so the resolver sends a `HEAD` request for each
+candidate version's POM and reads its `Last-Modified` header. It starts at the newest version and works down until
+one is old enough, so usually only a few requests are needed per artifact. The request goes to the repository the
+version was found in, with the credentials from your `settings.xml`. Versions in a repository without a cooldown are
+never checked.
+
+A version that exists only in your local repository, such as one you installed yourself, is looked up in each of the
+request's repositories in turn, and the cooldown of the first one that has it applies.
+
+A version is held back whenever its publish date can't be found, for example when the repository doesn't send
+`Last-Modified`, or a locally installed version can't be found in any repository. Each held-back version is logged
+with the reason.
+
+Some things to be aware of:
+
+- A repository manager that proxies Maven Central may report when it cached a POM rather than when it was
+  published, so versions can stay held back for longer than the cooldown.
+- The cooldown checks only the newest versions. A lower version published more recently, such as a backport
+  release, isn't held back once a newer version has passed the cooldown.
+- The `settings.xml` proxy configuration isn't used for these requests yet.
+- Versions you've already locked stay locked. The cooldown only affects which new version a range moves to.
+
+### Overriding the cooldown
+
+The Maven plugin's `cooldownDays` parameter, or `withCooldownDays` in the Java API, replaces the cooldown of every
+repository for that run. Set it to `0` to pick up an urgent fix the day it is released without editing the script:
+
+```sh
+mvn rangeresolver:resolve-deps -DcooldownDays=0
+```
+
+A positive value applies to every repository too, including ones declared without a cooldown.
 
 ## Snapshot updates
 

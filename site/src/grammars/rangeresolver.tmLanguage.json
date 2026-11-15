@@ -33,7 +33,7 @@
     },
     "modifier": {
       "name": "keyword.other.rangeresolver",
-      "match": "(?<=\\s)\\b(as|via|filtering|docker|snapshots|unlocked)\\b(?=\\s)"
+      "match": "(?<=\\s)\\b(as|via|cooldown|filtering|docker|snapshots|unlocked)\\b(?=\\s)"
     },
     "bound": {
       "name": "storage.modifier.rangeresolver",

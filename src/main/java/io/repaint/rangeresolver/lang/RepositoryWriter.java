@@ -38,6 +38,9 @@ public final class RepositoryWriter {
                     if (!repository.grouping().equals("default")) {
                         pw.printf(" as %s", repository.grouping());
                     }
+                    if (repository.cooldown() > 0) {
+                        pw.printf(" cooldown %d", repository.cooldown());
+                    }
                     pw.printf(";\n");
                 }
             }

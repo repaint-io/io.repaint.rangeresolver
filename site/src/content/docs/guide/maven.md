@@ -91,40 +91,12 @@ without editing the script:
 mvn rangeresolver:resolve-deps -DallowUnlocked='^com\.example:.*$'
 ```
 
-## Release cooldown
-
-To avoid picking up a release the day it ships, set `cooldownDays`. Versions published within that many days are
-held back, and each range resolves to the newest version that is old enough:
+To override the [release cooldown](../../language/repositories/#release-cooldown) declared on each repository, set
+`cooldownDays`. It applies to every repository, so `0` picks up a release the day it ships:
 
 ```sh
-mvn rangeresolver:resolve-deps -DcooldownDays=7
+mvn rangeresolver:resolve-deps -DcooldownDays=0
 ```
-
-or, to apply it to every run:
-
-```xml title="pom.xml"
-<properties>
-  <cooldownDays>7</cooldownDays>
-</properties>
-```
-
-Maven metadata doesn't record when each version was published, so the plugin sends a `HEAD` request for each
-candidate version's POM and reads its `Last-Modified` header. It starts at the newest version and works down until
-one is old enough, so usually only a few requests are needed per artifact. The request goes to the repository the
-version was found in, with the credentials from your `settings.xml`.
-
-A version is held back whenever its publish date can't be found, for example when the repository doesn't send
-`Last-Modified` or the version exists only in your local repository. Each held-back version is logged with the
-reason.
-
-Some things to be aware of:
-
-- A repository manager that proxies Maven Central may report when it cached a POM rather than when it was
-  published, so versions can stay held back for longer than the cooldown.
-- The cooldown checks only the newest versions. A lower version published more recently, such as a backport
-  release, isn't held back once a newer version has passed the cooldown.
-- The `settings.xml` proxy configuration isn't used for these requests yet.
-- Versions you've already locked stay locked. The cooldown only affects which new version a range moves to.
 
 ## Goals
 
@@ -255,7 +227,7 @@ file is present, as it is while `maven-release-plugin` runs. This lets a release
 | --- | --- | --- | --- |
 | `allowUnlocked` | `allowUnlocked` | none | all |
 | `allowSnapshots` | `allowSnapshots` | none | all |
-| `cooldownDays` | `cooldownDays` | `0` (off) | `resolve-deps`, `update-lower-bounds` ([details](#release-cooldown)) |
+| `cooldownDays` | `cooldownDays` | each repository's own `cooldown` | `resolve-deps`, `update-lower-bounds` ([details](../../language/repositories/#overriding-the-cooldown)) |
 | `allowDeprecatedDependencies` | `allowDeprecatedDependencies` | `true` | `resolve-deps`, `resolve-properties` |
 | `allowBlacklistedDependencies` | `allowBlacklistedDependencies` | `true` | `resolve-deps` |
 | `filterUnusedDependencies` | `filterUnusedDependencies` | `false` | `resolve-deps` |
