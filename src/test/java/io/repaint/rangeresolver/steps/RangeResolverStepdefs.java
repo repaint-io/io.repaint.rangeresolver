@@ -293,6 +293,26 @@ public class RangeResolverStepdefs {
         throw new IllegalStateException("No resolution of artifact for %s found.".formatted(artifact));
     }
 
+    @And("^the (blacklisted|deprecated|locked) dependency \"([^\"]*)\" should be \"([^\"]*)\"$")
+    public void theDependencyShouldBe(String section, String artifact, String version) {
+        assertThat(resolutionResult)
+                .as("Resolution should have produced a result")
+                .isNotNull();
+
+        var resolveds = switch (section) {
+            case "blacklisted" -> resolutionResult.blacklisted();
+            case "deprecated" -> resolutionResult.deprecated();
+            default -> resolutionResult.locked();
+        };
+
+        assertThat(resolveds
+                        .find(resolved -> artifact.equals(resolved.key()))
+                        .map(Resolved::version)
+                        .toOptional())
+                .as("The %s version of %s", section, artifact)
+                .contains(version);
+    }
+
     private String deltaDiff(String actual, String expected) {
         DiffMatchPatch diffMatchPatch = new DiffMatchPatch();
         return diffMatchPatch.patchToText(diffMatchPatch.patchMake(actual, expected));

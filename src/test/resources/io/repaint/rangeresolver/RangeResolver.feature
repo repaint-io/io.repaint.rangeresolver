@@ -173,6 +173,23 @@ Feature: Range Resolver
     When resolving
     Then the resolution of "com.fasterxml.jackson.core:jackson-annotations" should be "2.8.0"
 
+  Scenario: Unresolvable dependencies keep their previous resolutions
+    Given the following script:
+      """
+      repository file:///nonexistent/repository;
+      blacklist highest org.bouncycastle:bcprov-jdk15on:[1.4.0,2.0.0);
+      deprecate highest joda-time:joda-time:[2.15.0,3.0);
+      resolve highest com.fasterxml.jackson.core:jackson-core:[2.23.0,3.0.0);
+      blacklisted org.bouncycastle:bcprov-jdk15on:1.70;
+      deprecated joda-time:joda-time:2.15.1;
+      locked com.fasterxml.jackson.core:jackson-core:2.23.0;
+      """
+    When resolving
+    Then it should succeed
+    And the blacklisted dependency "org.bouncycastle:bcprov-jdk15on" should be "1.70"
+    And the deprecated dependency "joda-time:joda-time" should be "2.15.1"
+    And the locked dependency "com.fasterxml.jackson.core:jackson-core" should be "2.23.0"
+
   @docker
   Scenario: Resolution of docker images should work
     Given the following script:

@@ -308,11 +308,15 @@ public final class RepositoryResolver {
 
         Map<String, Resolved> importedDeprecations = filterImported(importedArtifacts, DEPRECATED);
 
-        Map<String, Resolved> localDeprecations =
-                toResolve.filter(isLocallyDeprecated).collect(resolveArtifact).collect(Resolved.collectByKey);
+        Map<String, Resolved> localDeprecations = toResolve
+                .filter(isLocallyDeprecated)
+                .collect(orPreviously(resolveArtifact, rangeResolver.deprecated()))
+                .collect(Resolved.collectByKey);
 
-        Map<String, Resolved> localBlacklists =
-                toResolve.filter(isLocallyBlacklisted).collect(resolveArtifact).collect(Resolved.collectByKey);
+        Map<String, Resolved> localBlacklists = toResolve
+                .filter(isLocallyBlacklisted)
+                .collect(orPreviously(resolveArtifact, rangeResolver.blacklisted()))
+                .collect(Resolved.collectByKey);
 
         Map<String, Resolved> deprecatedThings = mergeMaps(importedDeprecations, localDeprecations);
         Map<String, Resolved> blacklistedThings = mergeMaps(importedBlacklists, localBlacklists);
@@ -335,6 +339,23 @@ public final class RepositoryResolver {
                 sortedUniqueDeprecated,
                 sortedUniqueResolved,
                 sortedUniqueLocked);
+    }
+
+    /// Falls back to a request's previous resolution when it cannot be resolved now, such as when its repository is
+    /// unreachable, so that an unresolvable dependency is kept rather than dropped as though it were unused.
+    ///
+    /// @param resolveArtifact resolves a request.
+    /// @param previously the resolutions already recorded in the script.
+    /// @return the request's resolution, or its previous one if it cannot be resolved.
+    private Function<Resolve, Option<Resolved>> orPreviously(
+            Function<Resolve, Option<Resolved>> resolveArtifact, List<Resolved> previously) {
+        Map<String, Resolved> previousByKey = previously.collect(Resolved.collectByKey);
+        return resolve -> resolveArtifact.apply(resolve).orElse(() -> {
+            Option<Resolved> previous = Option.ofNullable(previousByKey.get(resolve.key()));
+            previous.forEach(resolved -> warningLogger.accept(
+                    "Keeping %s:%s, it could not be resolved".formatted(resolved.key(), resolved.version())));
+            return previous;
+        });
     }
 
     private Option<Resolved> resolveDockerImage(Resolve resolve) {
