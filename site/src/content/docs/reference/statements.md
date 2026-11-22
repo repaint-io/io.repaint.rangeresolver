@@ -21,7 +21,7 @@ Square brackets mark optional parts. `<regex>` is always written between slashes
 All Maven requests share this form:
 
 ```text
-<verb> <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/];
+<verb> <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/] [cooldown <days>];
 ```
 
 | Verb | Produces | Notes |

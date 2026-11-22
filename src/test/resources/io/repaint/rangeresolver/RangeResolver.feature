@@ -84,7 +84,7 @@ Feature: Range Resolver
       resolve lowest io.repaint:io.repaint.api:[1.0.0,2.0.0)
       resolve lowest io.repaint:io.repaint.impl:[1.0.0,2.0.0);
       """
-    Then it should fail with "Syntax error in cucumber: line 2:0 mismatched input 'resolve' expecting {'filtering', 'via', ';'}"
+    Then it should fail with "Syntax error in cucumber: line 2:0 mismatched input 'resolve' expecting {'filtering', 'via', 'cooldown', ';'}"
 
   Scenario: Keywords are usable as group, artifact and grouping names
     Given the following raw script:
@@ -119,6 +119,33 @@ Feature: Range Resolver
       """
     Then the dependency "io.repaint:io.repaint.api" should be resolving against the "lowest" range "[1.0.0,)"
     And the dependency "io.repaint:io.repaint.spi" should be resolving against the "highest" range "(,2.0.0]"
+
+  Scenario: Resolutions may declare their own cooldown
+    Given the following raw script:
+      """
+      repository https://repo1.maven.org/maven2 cooldown 7;
+      repository https://repo.example.com/releases as releases;
+      blacklist highest io.repaint:io.repaint.old:[1.0.0,2.0.0) cooldown 3;
+      deprecate highest io.repaint:io.repaint.test:[1.0.0,2.0.0) cooldown 0;
+      resolve highest io.repaint:io.repaint.api:[1.0.0,2.0.0) via releases filtering /^.*rc.*$/ cooldown 14;
+      resolve lowest io.repaint:io.repaint.spi:[1.0.0,2.0.0);
+      override highest io.repaint:io.repaint.core:[1.0.0,2.0.0) cooldown 30;
+      """
+    When writing the DSL back out
+    Then it should match the follow script:
+      """
+      repository https://repo1.maven.org/maven2 cooldown 7;
+      repository https://repo.example.com/releases as releases;
+
+      blacklist highest io.repaint:io.repaint.old:[1.0.0,2.0.0) cooldown 3;
+
+      deprecate highest io.repaint:io.repaint.test:[1.0.0,2.0.0) cooldown 0;
+
+      resolve highest io.repaint:io.repaint.api:[1.0.0,2.0.0) via releases filtering /^.*rc.*$/ cooldown 14;
+      resolve lowest io.repaint:io.repaint.spi:[1.0.0,2.0.0);
+
+      override highest io.repaint:io.repaint.core:[1.0.0,2.0.0) cooldown 30;
+      """
 
   Scenario: A script may end with a comment
     Given the following raw script:

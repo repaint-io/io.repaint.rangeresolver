@@ -66,8 +66,9 @@ other `createRepositoryResolver` overload. Resolution then honours the user's `s
 credentials.
 
 Each repository uses the [release cooldown](../../language/repositories/#release-cooldown) declared on it. To use one
-cooldown for every repository instead, call `withCooldownDays`. It returns a new resolver and leaves the original
-unchanged:
+cooldown for every repository instead, call `withCooldownDays`. This also replaces any
+[cooldown declared on a request](../../language/resolution/#cooldown). It returns a new resolver and leaves the
+original unchanged:
 
 ```java
 RepositoryResolver urgent = resolver.withCooldownDays(0);

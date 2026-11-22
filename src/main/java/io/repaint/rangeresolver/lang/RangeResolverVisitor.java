@@ -174,10 +174,27 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
             grouping = rep.repositoryGrouping().value().getText();
         }
         if (rep.cooldown() != null) {
-            cooldown = Integer.parseInt(rep.cooldown().value().getText());
+            cooldown = cooldownDays(rep.cooldown());
         }
 
         return Repository.of(comments(rep.comment()), rep.href().getText(), grouping, cooldown);
+    }
+
+    /// Reads the days of a `cooldown` clause.
+    ///
+    /// @throws IllegalStateException if the value is not a whole, non-negative number of days.
+    private int cooldownDays(RangeResolverParser.CooldownContext cooldown) {
+        String value = cooldown.value().getText();
+        try {
+            int days = Integer.parseInt(value);
+            if (days >= 0) {
+                return days;
+            }
+        } catch (NumberFormatException e) {
+            // reported below
+        }
+        throw new IllegalStateException("Invalid cooldown '%s' at line %d in %s, expected a whole number of days"
+                .formatted(value, cooldown.getStart().getLine(), sourceReference));
     }
 
     record ArtifactInfo(ArtifactType type, String group, String artifact, String version) {}
@@ -311,7 +328,7 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
             grouping = res.resolutionGrouping().value().getText();
         }
 
-        return Resolve.of(
+        Resolve resolve = Resolve.of(
                 comments(comments),
                 res.rangedArtifact().group().getText(),
                 res.rangedArtifact().artifactId().getText(),
@@ -323,6 +340,8 @@ public class RangeResolverVisitor extends RangeResolverBaseVisitor<RangeResolver
                 filteringRegex,
                 sourceReference,
                 grouping);
+
+        return res.cooldown() == null ? resolve : resolve.withCooldown(cooldownDays(res.cooldown()));
     }
 
     private Pattern resolveFilteringPattern(RangeResolverParser.FilteringContext filtering, Bound bound) {

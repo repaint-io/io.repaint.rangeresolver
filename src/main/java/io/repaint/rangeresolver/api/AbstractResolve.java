@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
@@ -82,6 +83,14 @@ public abstract class AbstractResolve implements PropertyBased {
     /// @return the grouping name, `default` if none was given.
     @Value.Parameter
     public abstract String grouping();
+
+    /// The number of days a version must have been published before it is resolved, declared with `cooldown`.
+    ///
+    /// When given, this replaces the cooldown of every repository the version could come from, so `cooldown 0`
+    /// exempts this artifact from any repository cooldown.
+    ///
+    /// @return the cooldown in days, empty to use the cooldown of the repository each version was found in.
+    public abstract OptionalInt cooldown();
 
     @Override
     @Value.Derived

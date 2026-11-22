@@ -33,6 +33,10 @@ import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import static dev.zazr.control.Option.none;
+
+import static io.repaint.rangeresolver.lang.RepositoryResolver.cooldownsFor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ReleaseCooldownTest {
@@ -109,6 +113,29 @@ class ReleaseCooldownTest {
         // Without 1.2, 1.1 is within the cooldown of the repository it was found in.
         assertThat(apply(cooldowns, java.util.Map.of("1.0", cautious, "1.1", cautious)))
                 .containsExactly("1.0");
+    }
+
+    @Test
+    void aStatementCooldownReplacesTheRepositoryCooldown() throws Exception {
+        publish("1.0", NOW.minus(Duration.ofDays(30)));
+        publish("1.1", NOW.minus(Duration.ofDays(10)));
+        publish("1.2", NOW.minus(Duration.ofDays(2)));
+
+        RemoteRepository cautious = repository("cautious", repoDir);
+        Function<RemoteRepository, Duration> repositoryCooldowns = r -> Duration.ofDays(7);
+        var found = java.util.Map.of("1.0", cautious, "1.1", cautious, "1.2", cautious);
+
+        // The repository cooldown alone lets 1.1 through.
+        assertThat(apply(cooldownsFor(resolve, repositoryCooldowns, none()), found))
+                .containsExactly("1.0", "1.1");
+
+        // A longer cooldown on the statement holds it back.
+        assertThat(apply(cooldownsFor(resolve.withCooldown(14), repositoryCooldowns, none()), found))
+                .containsExactly("1.0");
+
+        // A zero cooldown on the statement exempts it.
+        assertThat(apply(cooldownsFor(resolve.withCooldown(0), repositoryCooldowns, none()), found))
+                .containsExactly("1.0", "1.1", "1.2");
     }
 
     @Test

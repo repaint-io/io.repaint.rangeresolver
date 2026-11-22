@@ -787,7 +787,7 @@ public final class RepositoryResolver {
                 rangeResult,
                 resolve,
                 List.ofAll(rangeResult.getVersions()).filter(filterVersion(resolve)),
-                cooldowns);
+                cooldownsFor(resolve, cooldowns, cooldownOverride));
 
         if (resolvedVersions.isEmpty()) {
             return none();
@@ -905,6 +905,28 @@ public final class RepositoryResolver {
                 .map(r -> cooldownDays.getOrDefault(r.getId(), 0))
                 .max()
                 .getOrElse(0));
+    }
+
+    /**
+     * Narrows the repository cooldowns to a single request.
+     *
+     * <p>A {@code cooldown <days>} declared on the request replaces the cooldown of every repository, so
+     * {@code cooldown 0} exempts it. An override, when given, still applies over the request's own cooldown.
+     *
+     * @param resolve the request being resolved.
+     * @param repositoryCooldowns the cooldown of each repository, from {@link #cooldowns}.
+     * @param cooldownOverride the cooldown that applies to everything, if any.
+     * @return the cooldown to apply to versions of this request found in each repository.
+     */
+    static Function<RemoteRepository, Duration> cooldownsFor(
+            Resolve resolve,
+            Function<RemoteRepository, Duration> repositoryCooldowns,
+            Option<Duration> cooldownOverride) {
+        if (cooldownOverride.isDefined() || resolve.cooldown().isEmpty()) {
+            return repositoryCooldowns;
+        }
+        Duration cooldown = Duration.ofDays(resolve.cooldown().orElseThrow());
+        return remote -> cooldown;
     }
 
     private RemoteRepository buildRepository(AbstractRepository repo, boolean updateSnapshots) {

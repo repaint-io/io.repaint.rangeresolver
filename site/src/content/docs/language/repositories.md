@@ -106,7 +106,13 @@ repository for that run. Set it to `0` to pick up an urgent fix the day it is re
 mvn rangeresolver:resolve-deps -DcooldownDays=0
 ```
 
-A positive value applies to every repository too, including ones declared without a cooldown.
+A positive value applies to every repository too, including ones declared without a cooldown. The override also
+replaces any [`cooldown` declared on a request](../resolution/#cooldown).
+
+### Cooling down a single artifact
+
+A request can declare its own `cooldown`, which replaces the repository cooldown for that artifact. See
+[Resolution requests](../resolution/#cooldown).
 
 ## Snapshot updates
 

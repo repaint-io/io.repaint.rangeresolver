@@ -92,7 +92,8 @@ mvn rangeresolver:resolve-deps -DallowUnlocked='^com\.example:.*$'
 ```
 
 To override the [release cooldown](../../language/repositories/#release-cooldown) declared on each repository, set
-`cooldownDays`. It applies to every repository, so `0` picks up a release the day it ships:
+`cooldownDays`. It applies to every repository, and to every [request's own cooldown](../../language/resolution/#cooldown),
+so `0` picks up a release the day it ships:
 
 ```sh
 mvn rangeresolver:resolve-deps -DcooldownDays=0

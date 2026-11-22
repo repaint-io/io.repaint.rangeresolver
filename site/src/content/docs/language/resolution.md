@@ -4,10 +4,10 @@ description: resolve, override, deprecate and blacklist.
 ---
 
 ```text
-resolve   <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/];
-override  <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/];
-deprecate <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/];
-blacklist <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/];
+resolve   <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/] [cooldown <days>];
+override  <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/] [cooldown <days>];
+deprecate <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/] [cooldown <days>];
+blacklist <bound> <group>:<artifact>:<range> [via <grouping>] [filtering /<regex>/] [cooldown <days>];
 ```
 
 All four request statements share one form. They differ in what happens to the version they pick.
@@ -60,6 +60,30 @@ snapshots, include `SNAPSHOT` in your pattern.
 
 A pattern with no metacharacters is still a regular expression. `/release/` excludes only the version that is
 exactly `release`.
+
+## `cooldown`
+
+`cooldown <days>` holds back versions of this artifact published within that many days. It replaces the
+[release cooldown](../repositories/#release-cooldown) of every repository the versions come from, so it can lengthen
+the cooldown for one artifact or, with `cooldown 0`, exempt a trusted one:
+
+```rangeresolver
+repository https://repo1.maven.org/maven2/ cooldown 7;
+
+// A risky dependency waits a month.
+resolve highest com.example:fragile:[1.0,2.0) cooldown 30;
+
+// Our own library is picked up the day it ships.
+resolve highest com.example:widgets:[2.0,3.0) cooldown 0;
+
+// Everything else uses the repository's 7 days.
+resolve highest org.slf4j:slf4j-api:[2.0.0,3.0.0);
+```
+
+A request without a `cooldown` clause uses the cooldown of the repository each version was found in. A request
+read from an [imported](../imports/) script keeps the cooldown declared there. The Maven plugin's `cooldownDays`
+parameter, or `withCooldownDays` in the Java API, still [overrides](../repositories/#overriding-the-cooldown) every
+cooldown, including these.
 
 ## Properties
 

@@ -139,6 +139,9 @@ public final class RepositoryWriter {
                         && resolve.filtering() != FILTER_SNAPSHOTS) {
                     pw.printf(" filtering /%s/", resolve.filtering());
                 }
+
+                // Written even when zero, which exempts the artifact from the repository cooldown.
+                resolve.cooldown().ifPresent(days -> pw.printf(" cooldown %d", days));
                 pw.printf(";\n");
             }
         }

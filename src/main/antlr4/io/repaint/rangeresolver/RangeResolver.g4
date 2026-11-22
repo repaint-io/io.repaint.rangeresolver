@@ -16,7 +16,7 @@ docker: comment* DOCKER dockerImage SEMI;
 dockerImage: dockerImageName COLON version;
 // An optional `registry[:port]/` prefix, e.g. `registry.example.com:5000/almalinux:8`.
 dockerImageName: identifier (COLON identifier)?;
-resolution: bounds rangedArtifact resolutionGrouping? filtering? SEMI;
+resolution: bounds rangedArtifact resolutionGrouping? filtering? cooldown? SEMI;
 alias: comment* ALIAS artifact aliasValue SEMI;
 resolved: comment* RESOLVED resolvedArtifact SEMI;
 locked: comment* LOCKED resolvedArtifact SEMI;
