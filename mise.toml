@@ -1,4 +1,6 @@
 [tools]
+# palantir-java-format (Spotless) crashes on JDK 27, so build on 26 until that is fixed.
+java = "temurin-26.0.2.1+1"
 "aqua:restechnica/semverbot" = "latest"
 
 [tasks.release]
